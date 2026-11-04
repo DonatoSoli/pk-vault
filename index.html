@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#100e1f">
+<meta name="color-scheme" content="dark">
+<title>PK Vault</title>
+<link rel="icon" id="favicon" href="https://upload.wikimedia.org/wikipedia/commons/9/91/PK_icon.svg">
+<link rel="apple-touch-icon" id="touchicon" href="https://upload.wikimedia.org/wikipedia/commons/9/91/PK_icon.svg?width=512">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PK Vault">
+<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22PK Vault%22,%22short_name%22:%22PK Vault%22,%22display%22:%22standalone%22,%22background_color%22:%22%23100e1f%22,%22theme_color%22:%22%23100e1f%22,%22start_url%22:%22.%22,%22lang%22:%22it%22,%22icons%22:[{%22src%22:%22https://upload.wikimedia.org/wikipedia/commons/9/91/PK_icon.svg%22,%22sizes%22:%22any%22,%22type%22:%22image/svg+xml%22,%22purpose%22:%22any%22}]}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+ --bg:#100e1f;--bg2:#15122a;--surface:#1e1a36;--surface2:#29244a;--line:#352f5a;
+ --text:#f2effb;--muted:#a59fc6;--faint:#6f6994;
+ --mint:#5cf0b4;--mint-ink:#06291c;--amber:#ffc94a;--amber-ink:#2b1d00;--violet:#a689ff;--rose:#ff8aa5;
+ --display:"Bricolage Grotesque",ui-rounded,"SF Pro Rounded",system-ui,sans-serif;
+ --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+ --cols:3;--amb:122 92 255;
+ color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 60px)}
+body{margin:0;min-height:100dvh;background:var(--bg);color:var(--text);font-family:var(--body);-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+body.locked{overflow:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+[hidden]{display:none!important}
+
+/* ---------- Testata ---------- */
+.top{padding:calc(env(safe-area-inset-top,0px) + 10px) 18px 0;max-width:1200px;margin:0 auto}
+.brandrow{display:flex;align-items:center;gap:12px;min-height:52px}
+.mark{width:34px;height:34px;border-radius:10px;background:var(--surface);display:grid;place-items:center;position:relative;overflow:hidden}
+.mark img{width:28px;height:22px;object-fit:contain;position:absolute;opacity:0;transition:opacity .3s}
+.mark img.ok{opacity:1}.mark img.ok+span{opacity:0}
+.mark span{font-family:var(--display);font-weight:800;font-size:15px;color:var(--amber)}
+.appname{font-family:var(--display);font-weight:700;font-size:17px;flex:1}
+.acts{display:flex;gap:4px}
+.iconbtn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--text);transition:background .15s}
+.iconbtn:active{background:var(--surface2)}
+.iconbtn.on{color:var(--mint)}
+.iconbtn .dot{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--mint);transform:translate(9px,-9px)}
+.hero{padding:30px 0 16px}
+.hero h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8.6vw,44px);line-height:1;letter-spacing:-.02em;margin:0 0 16px}
+.progress{display:flex;align-items:center;gap:14px}
+.pbar{flex:1;height:8px;border-radius:8px;background:var(--surface2);overflow:hidden}
+.pbar i{display:block;height:100%;width:0;border-radius:8px;background:linear-gradient(90deg,#3fd69c,var(--mint));transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.pnum{font-family:var(--display);font-weight:800;font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pnum small{font-size:15px;color:var(--faint);font-weight:700}
+.statline{display:flex;gap:16px;margin-top:9px;font-size:13px;color:var(--muted)}
+.statline b{color:var(--text);font-weight:650}
+
+/* ---------- Dock (ricerca + serie) ---------- */
+.dock{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:transparent;border-bottom:1px solid transparent;transition:border-color .2s,background .2s}
+.dock.stuck{border-bottom-color:var(--line);background:rgba(16,14,31,.86);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3)}
+.tab{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.tab:not(.sel){background:rgba(30,26,54,.78)}
+.dock-in{max-width:1200px;margin:0 auto}
+.searchbar{display:flex;gap:8px;padding:10px 18px 2px}
+.searchbar input{flex:1;min-width:0;height:44px;border-radius:14px;border:1px solid var(--line);background:var(--surface);padding:0 14px;font-size:16px;outline:none}
+.searchbar input:focus{border-color:var(--mint)}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 18px 12px;scrollbar-width:none;scroll-snap-type:x proximity;scroll-padding-inline:18px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;scroll-snap-align:start;height:36px;padding:0 14px;border-radius:99px;background:var(--surface);color:var(--muted);font-size:13.5px;font-weight:650;display:flex;align-items:center;gap:7px;transition:background .15s,color .15s}
+.tab small{font-size:11.5px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
+.tab.sel{background:var(--text);color:var(--bg)}
+.tab.sel small{color:#5b5578}
+.tab.done small{color:#2fb37f}
+
+/* ---------- Griglia ---------- */
+.wrap{max-width:1200px;margin:0 auto;padding:6px 18px calc(110px + env(safe-area-inset-bottom,0px))}
+.resbar{display:flex;justify-content:space-between;align-items:center;min-height:30px;font-size:13px;color:var(--muted);margin-bottom:6px}
+.linkbtn{color:var(--mint);font-weight:650;font-size:13px;padding:6px 0}
+.grid{--c:var(--cols);display:grid;grid-template-columns:repeat(var(--c),minmax(0,1fr));gap:18px 10px;align-items:start}
+@media(min-width:640px){.grid{--c:calc(var(--cols) + 2);gap:24px 16px}}
+@media(min-width:980px){.grid{--c:calc(var(--cols) + 3)}}
+.ghead{grid-column:1/-1;display:flex;align-items:baseline;gap:10px;margin:14px 0 -4px}
+.ghead:first-child{margin-top:0}
+.ghead h2{font-family:var(--display);font-weight:800;font-size:20px;margin:0;letter-spacing:-.01em}
+.ghead span{font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+.ghead span b{color:var(--mint);font-weight:650}
+.card{min-width:0;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y;outline:none}
+.card:active .cv{transform:scale(.97)}
+.cv{position:relative;aspect-ratio:.68;border-radius:10px;overflow:hidden;background:var(--surface);transition:transform .18s,box-shadow .2s;isolation:isolate}
+.cv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s;-webkit-user-drag:none;pointer-events:none}
+.cv img.ok{opacity:1}
+.cv-fb{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px;text-align:center;background:linear-gradient(160deg,#2a2450,#17142c)}
+.cv-fb b{font-family:var(--display);font-weight:800;font-size:clamp(18px,6vw,30px);color:var(--amber);letter-spacing:-.04em}
+.cv-fb span{font-size:11px;font-weight:700;color:var(--muted)}
+.cv-fb em{font-style:normal;font-size:9.5px;color:var(--faint)}
+.badge{position:absolute;right:6px;bottom:6px;z-index:3;width:24px;height:24px;border-radius:50%;background:var(--mint);color:var(--mint-ink);display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.45)}
+.badge .icon{width:14px;height:14px;stroke-width:3}
+.kind{position:absolute;left:6px;top:6px;z-index:3;padding:3px 7px;border-radius:6px;font-size:10px;font-weight:750;background:var(--violet);color:#160b33}
+.kind.sp{background:var(--amber);color:var(--amber-ink)}
+.card.owned .cv{box-shadow:0 0 0 2px var(--mint)}
+.card.chosen .cv{box-shadow:0 0 0 3px var(--amber)}
+.choose{position:absolute;left:6px;top:6px;z-index:4;width:24px;height:24px;border-radius:8px;background:var(--amber);color:var(--amber-ink);display:grid;place-items:center}
+.choose .icon{width:15px;height:15px;stroke-width:3}
+.grid.dim .card:not(.owned) .cv img{filter:grayscale(.75) brightness(.55)}
+.meta{padding:8px 1px 0}
+.num{display:block;font-size:11.5px;font-weight:650;color:var(--muted);font-variant-numeric:tabular-nums}
+.card.owned .num{color:var(--mint)}
+.ttl{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:13px;font-weight:600;line-height:1.25;margin-top:2px}
+.grid[data-cols="4"] .ttl{font-size:11.5px}.grid[data-cols="4"] .badge{width:20px;height:20px}
+.grid[data-cols="2"] .ttl{font-size:15px}
+.empty{grid-column:1/-1;text-align:center;padding:56px 16px;color:var(--muted)}
+.empty h3{font-family:var(--display);color:var(--text);font-size:20px;margin:0 0 6px}
+.empty p{margin:0 0 18px;font-size:14px}
+
+/* ---------- Pulsanti ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:14px;background:var(--surface2);font-weight:700;font-size:14.5px;text-decoration:none;transition:transform .12s,background .15s;text-align:center}
+.btn:active{transform:scale(.97)}
+.btn.amber{background:var(--amber);color:var(--amber-ink)}
+.btn.mint{background:var(--mint);color:var(--mint-ink)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.btn.full{width:100%}
+.btn.sm{min-height:40px;font-size:13px;padding:0 13px;border-radius:12px}
+.btn:disabled{opacity:.4}
+
+/* ---------- Barra selezione ---------- */
+.bulk{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;max-width:520px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:8px;border-radius:20px;background:var(--surface2);box-shadow:0 18px 50px rgba(0,0,0,.55);transform:translateY(140%);transition:transform .35s cubic-bezier(.2,.9,.25,1.1)}
+.bulk.open{transform:none}
+.bulk .count{min-width:56px;text-align:center;font-family:var(--display);font-weight:800;font-size:20px;color:var(--amber);line-height:1}
+.bulk .count small{display:block;font-family:var(--body);font-size:10px;font-weight:650;color:var(--muted);margin-top:3px}
+.bulk .btn{flex:1;min-height:44px;font-size:13px;padding:0 8px}
+.bulk .x{width:44px;height:44px;flex:0 0 44px;border-radius:12px;display:grid;place-items:center}
+
+/* ---------- Fogli (filtri, impostazioni) ---------- */
+.overlay{position:fixed;inset:0;z-index:60;background:rgba(6,5,14,.6);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;display:flex;align-items:flex-end;justify-content:center}
+.overlay.open{opacity:1;visibility:visible}
+.sheet{width:100%;max-width:560px;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;background:var(--bg2);border-radius:26px 26px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom,0px));transform:translateY(40px);transition:transform .35s cubic-bezier(.2,.85,.2,1)}
+.overlay.open .sheet{transform:none}
+.grab{width:40px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 16px}
+.sh-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.sh-head h2{font-family:var(--display);font-weight:800;font-size:24px;margin:0}
+.grouplabel{font-size:13px;font-weight:650;color:var(--muted);margin:20px 0 9px}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.chip{height:38px;padding:0 14px;border-radius:12px;background:var(--surface);color:var(--muted);font-size:13.5px;font-weight:650}
+.chip.sel{background:var(--text);color:var(--bg)}
+.note{font-size:13px;line-height:1.5;color:var(--muted);margin:8px 0 0}
+.stack{display:grid;gap:9px}
+hr.sep{border:0;border-top:1px solid var(--line);margin:22px 0 4px}
+@media(min-width:640px){.overlay{align-items:center}.sheet{border-radius:26px}}
+
+/* ---------- Visore albo (swipe) ---------- */
+.viewer{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;opacity:0;transform:scale(.985);transition:opacity .22s,transform .28s cubic-bezier(.2,.85,.2,1)}
+.viewer.open{opacity:1;transform:none}
+.v-bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 62% at 50% 0%,rgb(var(--amb) / .5),rgb(var(--amb) / .12) 52%,transparent 78%);transition:background .6s}
+.v-top{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 6px) 10px 4px}
+.v-pos{font-size:13px;font-weight:650;color:var(--text);opacity:.85;font-variant-numeric:tabular-nums}
+.v-viewport{position:relative;z-index:2;flex:1;overflow:hidden}
+.v-track{display:flex;width:300%;height:100%;transform:translateX(-33.3333%);touch-action:pan-y;will-change:transform}
+.v-track.anim{transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+.pane{flex:0 0 33.3333%;width:33.3333%;height:100%;overflow-y:auto;overscroll-behavior:contain;padding:8px 20px calc(120px + env(safe-area-inset-bottom,0px))}
+.pane-in{max-width:560px;margin:0 auto}
+.p-cover{width:min(66vw,310px,calc(48dvh * .68));margin:6px auto 0;cursor:zoom-in;position:relative}
+.p-cover .cv{border-radius:8px;box-shadow:0 24px 50px rgba(0,0,0,.55);transition:box-shadow .3s,transform .3s}
+.p-cover .cv img{object-fit:contain;background:#0c0a18}
+.p-cover.owned .cv{box-shadow:0 0 0 3px var(--mint),0 24px 50px rgba(0,0,0,.55)}
+.p-cover.pop .cv{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.045)}100%{transform:scale(1)}}
+.p-zoomhint{position:absolute;right:8px;top:8px;z-index:4;width:34px;height:34px;border-radius:10px;background:rgba(16,14,31,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:grid;place-items:center}
+.p-zoomhint .icon{width:17px;height:17px}
+.p-head{text-align:center;margin:20px 0 22px}
+.p-over{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:650;color:var(--muted)}
+.p-over .tag{padding:3px 8px;border-radius:7px;background:var(--violet);color:#160b33;font-size:11px;font-weight:750}
+.p-over .tag.sp{background:var(--amber);color:var(--amber-ink)}
+.p-title{font-family:var(--display);font-weight:800;font-size:clamp(26px,7.4vw,36px);line-height:1.04;letter-spacing:-.02em;margin:8px 0 6px;overflow-wrap:anywhere}
+.p-sub{font-size:14px;color:var(--muted)}
+.box{background:rgba(30,26,54,.72);border-radius:20px;padding:16px;margin-bottom:12px}
+.box h3{font-family:var(--display);font-weight:700;font-size:17px;margin:0 0 12px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:block;min-width:0}.field.wide{grid-column:1/-1}
+.field span{display:block;font-size:12px;font-weight:650;color:var(--muted);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);padding:11px 12px;font-size:16px;outline:none;appearance:none;-webkit-appearance:none}
+.field textarea{min-height:84px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--mint)}
+.field select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 19px) 20px,calc(100% - 14px) 20px;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
+.field input::placeholder,.field textarea::placeholder{color:var(--faint)}
+details.box summary{list-style:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-family:var(--display);font-weight:700;font-size:17px}
+details.box summary::-webkit-details-marker{display:none}
+details.box summary .icon{transition:transform .2s;color:var(--muted)}
+details.box[open] summary .icon{transform:rotate(90deg)}
+details.box[open] summary{margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.row .btn{flex:1}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.links a{display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:6px 10px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);font-size:12.5px;font-weight:650;text-decoration:none;text-align:center;color:var(--text)}
+.links .icon{width:15px;height:15px}
+.filebtn{position:relative;overflow:hidden}.filebtn input{position:absolute;inset:0;opacity:0}
+.v-actions{position:absolute;z-index:4;left:0;right:0;bottom:0;display:flex;gap:10px;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(16,14,31,.92) 30%)}
+.v-actions .btn{min-height:54px;border-radius:16px;font-size:15px}
+.v-actions .own{flex:1.7}
+.v-actions .vinted{flex:1;background:var(--surface2)}
+.navbtn{position:absolute;z-index:3;top:38%;width:44px;height:44px;border-radius:50%;background:rgba(41,36,74,.85);display:grid;place-items:center}
+.navbtn.prev{left:10px}.navbtn.next{right:10px}
+.navbtn:disabled{opacity:.25}
+@media(pointer:coarse){.navbtn{display:none}}
+.swipehint{position:absolute;z-index:5;left:50%;top:44%;transform:translateX(-50%);padding:10px 16px;border-radius:99px;background:rgba(16,14,31,.88);font-size:13px;font-weight:650;white-space:nowrap;pointer-events:none;animation:hint 2.6s ease both}
+@keyframes hint{0%{opacity:0}12%{opacity:1;transform:translateX(-50%)}30%{transform:translateX(calc(-50% - 18px))}48%{transform:translateX(calc(-50% + 18px))}62%{transform:translateX(-50%)}85%{opacity:1}100%{opacity:0}}
+
+/* ---------- Zoom copertina ---------- */
+.lightbox{position:fixed;inset:0;z-index:80;background:rgba(8,6,18,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 56px) 10px calc(env(safe-area-inset-bottom,0px) + 18px);animation:fade .2s both}
+@keyframes fade{from{opacity:0}}
+.lb-close{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 8px);width:44px;height:44px;border-radius:14px;background:var(--surface2);display:grid;place-items:center}
+.lb-frame{width:min(94vw,680px);max-height:76dvh;aspect-ratio:.68;perspective:1100px;touch-action:none;display:flex;align-items:center;justify-content:center}
+.lb-img{display:block;width:100%;height:100%;object-fit:contain;border-radius:4px;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .55s cubic-bezier(.17,.78,.2,1),opacity .3s;opacity:0;-webkit-user-drag:none;pointer-events:none}
+.lb-img.ok{opacity:1}
+.lb-frame.dragging .lb-img{transition:opacity .3s}
+.lb-fb{display:none;color:var(--muted)}
+.lb-report{font-size:12px;color:var(--muted);text-align:center;max-width:94vw}
+.lb-report.low{color:var(--amber)}
+.lb-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+.lb-row .btn{min-height:38px;font-size:12.5px}
+
+/* ---------- Toast ---------- */
+.toast{position:fixed;z-index:90;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);opacity:0;pointer-events:none;background:var(--text);color:var(--bg);font-weight:650;font-size:13.5px;padding:11px 18px;border-radius:99px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;transition:transform .22s,opacity .22s;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast.show{transform:translate(-50%,0);opacity:1}
+
+/* ---------- V20 · novità e albi personali ---------- */
+.stripe.up{background:linear-gradient(90deg,#5cf0b4,#7ee0ff);color:#062a1d}
+.p-over .tag.up{background:var(--mint);color:var(--mint-ink)}
+.p-over .tag.mine,.p-over .tag.up{margin-left:4px}
+.p-over .tag.mine{background:var(--surface2);color:var(--text)}
+.p-over{flex-wrap:wrap;justify-content:center}
+.mine{position:absolute;right:6px;bottom:22px;z-index:3;width:20px;height:20px;border-radius:7px;background:var(--surface2);color:var(--text);font-weight:800;font-size:14px;display:grid;place-items:center}
+.newsitem{display:block;padding:13px 0;border-bottom:1px solid var(--line);text-decoration:none}
+.newsitem:last-child{border-bottom:0}
+.newsitem b{display:block;font-size:14.5px;font-weight:650;line-height:1.35}
+.newsitem small{display:flex;gap:8px;align-items:center;margin-top:4px;font-size:12px;color:var(--muted)}
+.newsitem em{font-style:normal;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--mint);color:var(--mint-ink)}
+.newsbox{background:var(--surface);border-radius:16px;padding:2px 14px;margin-top:10px}
+.loader{padding:18px 0;color:var(--muted);font-size:13px;text-align:center}
+.menudot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--mint);transform:translate(10px,-10px);box-shadow:0 0 8px var(--mint)}
+/* ---------- V19 · logo personale ---------- */
+.herologo{display:block;max-width:min(78%,360px);max-height:96px;object-fit:contain;object-position:left center;margin:0 0 16px;filter:drop-shadow(0 4px 14px rgba(0,0,0,.55))}
+.logoprev{display:flex;align-items:center;justify-content:center;height:96px;border-radius:16px;background:repeating-conic-gradient(#1e1a36 0 25%,#241f40 0 50%) 0 0/18px 18px;margin-top:4px;padding:10px}
+.logoprev img{max-width:100%;max-height:100%;object-fit:contain}
+.logoprev span{font-size:12px;color:var(--muted)}
+.inline-url{display:flex;gap:8px;margin-top:10px}
+.inline-url input{flex:1;min-width:0;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);padding:0 12px;font-size:16px;outline:none}
+.inline-url input:focus{border-color:var(--mint)}
+/* ---------- V18 · tema PK ---------- */
+.appbg{position:absolute;left:0;right:0;top:0;height:min(80vh,640px);z-index:0;overflow:hidden;pointer-events:none}
+.appbg img{position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;object-position:center 22%;opacity:0;filter:blur(var(--bgblur,7px)) saturate(1.2);transition:opacity .8s;
+ -webkit-mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.8) 42%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.8) 42%,transparent 100%)}
+.appbg img.ok{opacity:var(--bgop,.5)}
+.appbg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,14,31,.55) 0%,rgba(16,14,31,.2) 35%,rgba(16,14,31,.65) 75%,var(--bg) 100%),radial-gradient(90% 60% at 80% 0%,rgba(122,92,255,.25),transparent 70%)}
+.top,.wrap{position:relative;z-index:1}
+.mark{width:46px;height:46px;border-radius:14px;background:linear-gradient(145deg,#2c2650,#151129);border:1px solid rgba(255,201,74,.25);box-shadow:inset 0 1px rgba(255,255,255,.15),0 6px 18px rgba(0,0,0,.4)}
+.mark::after{content:"";position:absolute;bottom:-20px;left:-6px;width:58px;height:34px;background:var(--amber);filter:blur(20px);opacity:.25}
+.mark img{width:38px;height:31px;z-index:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.pkword{font-family:var(--display);font-style:italic;font-weight:800;color:var(--amber);letter-spacing:-.06em;text-shadow:-1.5px -1.5px 0 #000,1.5px -1.5px 0 #000,-1.5px 1.5px 0 #000,2px 2px 0 #000;display:inline-block;transform:skewX(-8deg)}
+.mark span.pkword{font-size:22px}
+.brand{flex:1;min-width:0}
+.appname{font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:.02em;line-height:1}
+.appname .pkword{font-size:21px;margin-right:4px}
+.tagline{font-size:10px;font-weight:700;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);margin-top:5px;text-transform:uppercase}
+.hero h1{text-shadow:0 2px 24px rgba(0,0,0,.5)}
+.cv-fb b{font-style:italic;transform:skewX(-9deg);text-shadow:-1.5px -1.5px 0 #000,1.5px -1.5px 0 #000,-1.5px 1.5px 0 #000,2px 2px 0 #000;letter-spacing:-.06em}
+.stripe{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:4px 3px;text-align:center;font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.stripe.v{background:linear-gradient(90deg,#b28cff,#e2b2f7);color:#1a0f33}
+.stripe.sp{background:linear-gradient(90deg,#ffd35c,#ffad57);color:#2b1d00}
+.grid[data-cols="2"] .stripe{font-size:10px;padding:5px}
+.card .badge{bottom:auto;top:6px}
+.v-bg::after{content:"";position:absolute;inset:0;background-image:linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:28px 28px;-webkit-mask-image:linear-gradient(180deg,transparent,#000 12%,#000 55%,transparent 80%);mask-image:linear-gradient(180deg,transparent,#000 12%,#000 55%,transparent 80%)}
+.v-chip{display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:.14em;color:#dfe6ff;background:rgba(9,8,20,.55);border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:9px;margin:0 auto 12px}
+.v-chip i{width:6px;height:6px;border-radius:50%;background:var(--mint);box-shadow:0 0 10px var(--mint)}
+.p-chipwrap{text-align:center}
+.links button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:6px 10px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);font-size:12.5px;font-weight:650;color:var(--text)}
+.links button .icon{width:15px;height:15px}
+.bgprev{height:92px;border-radius:16px;overflow:hidden;position:relative;background:var(--surface);margin-top:4px}
+.bgprev img{width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.bgprev span{position:absolute;inset:auto 10px 8px auto;font-size:11px;font-weight:700;background:rgba(16,14,31,.8);padding:4px 8px;border-radius:8px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-chev-l" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+<symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+<symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 4h5v5M9 20H4v-5M20 4l-6 6M4 20l6-6"/></symbol>
+<symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M5 16v4h14v-4"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12m-5-5 5 5 5-5M5 16v4h14v-4"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="m4 17 5-5 4 3 3-3 4 4"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
+<symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12H6.2L5 8Z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2"/></symbol>
+</defs></svg>
+
+<div class="appbg" id="appbg" aria-hidden="true"><img id="appbgImg" alt=""></div>
+<header class="top">
+ <div class="brandrow">
+  <div class="mark" aria-hidden="true"><img id="markImg" src="https://upload.wikimedia.org/wikipedia/commons/9/91/PK_icon.svg" alt="" onload="this.classList.add('ok')" onerror="this.classList.remove('ok')"><span class="pkword">PK</span></div>
+  <div class="brand"><div class="appname"><span class="pkword">PK</span>VAULT</div><div class="tagline">Collezione · 1996–2026</div></div>
+  <div class="acts">
+   <button class="iconbtn" id="searchBtn" aria-label="Cerca"><svg class="icon"><use href="#i-search"/></svg></button>
+   <button class="iconbtn" id="filterBtn" aria-label="Filtri e vista" style="position:relative"><svg class="icon"><use href="#i-sliders"/></svg><span class="dot" id="filterDot" hidden></span></button>
+   <button class="iconbtn" id="menuBtn" aria-label="Novità, backup e impostazioni" style="position:relative"><svg class="icon"><use href="#i-more"/></svg><span class="menudot" id="menuDot" hidden></span></button>
+  </div>
+ </div>
+ <section class="hero">
+  <img class="herologo" id="heroLogo" alt="" hidden>
+  <h1>La mia collezione</h1>
+  <div class="progress"><div class="pbar" role="progressbar" aria-label="Completamento collezione" id="pbar"><i id="pfill"></i></div><div class="pnum"><span id="ownedN">0</span><small> / <span id="totalN">0</span></small></div></div>
+  <div class="statline"><span><b id="missingN">0</b> mancanti</span><span id="spentWrap" hidden><b id="spentN"></b> spesi</span></div>
+ </section>
+</header>
+
+<div class="dock" id="dock"><div class="dock-in">
+ <div class="searchbar" id="searchbar" hidden><input id="search" type="search" autocomplete="off" enterkeyhint="search" placeholder="Numero, titolo o anno" aria-label="Cerca albi"><button class="iconbtn" id="closeSearch" aria-label="Chiudi ricerca"><svg class="icon"><use href="#i-close"/></svg></button></div>
+ <nav class="tabs" id="tabs" aria-label="Serie"></nav>
+</div></div>
+
+<main class="wrap">
+ <div class="resbar"><span id="resultsText"></span><button class="linkbtn" id="clearFilters" hidden>Azzera filtri</button></div>
+ <div id="grid" class="grid" aria-live="polite"></div>
+</main>
+
+<div class="bulk" id="bulkBar" role="toolbar" aria-label="Selezione multipla">
+ <div class="count"><span id="bulkCount">0</span><small>selezionati</small></div>
+ <button class="btn mint" id="bulkOwn">Posseduti</button>
+ <button class="btn" id="bulkMiss">Mancanti</button>
+ <button class="x" id="bulkCancel" aria-label="Annulla selezione"><svg class="icon"><use href="#i-close"/></svg></button>
+</div>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Scheda albo" hidden>
+ <div class="v-bg"></div>
+ <div class="v-top">
+  <button class="iconbtn" id="vBack" aria-label="Torna alla collezione"><svg class="icon"><use href="#i-chev-l"/></svg></button>
+  <div class="v-pos" id="vPos"></div>
+  <button class="iconbtn" id="vZoom" aria-label="Ingrandisci copertina"><svg class="icon"><use href="#i-expand"/></svg></button>
+ </div>
+ <div class="v-viewport" id="vViewport">
+  <div class="v-track" id="vTrack"><section class="pane"></section><section class="pane"></section><section class="pane"></section></div>
+  <button class="navbtn prev" id="vPrev" aria-label="Albo precedente"><svg class="icon"><use href="#i-chev-l"/></svg></button>
+  <button class="navbtn next" id="vNext" aria-label="Albo successivo"><svg class="icon"><use href="#i-chev-r"/></svg></button>
+ </div>
+ <div class="v-actions"><button class="btn own" id="vOwn"></button><a class="btn vinted" id="vVinted" target="_blank" rel="noopener noreferrer"><svg class="icon"><use href="#i-bag"/></svg>Vinted</a></div>
+</div>
+
+<div class="overlay" id="overlay"><div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div id="sheetBody"></div></div></div>
+<div class="toast" id="toast" role="status"></div>
+<input id="importFile" type="file" accept="application/json,.json" hidden>
+
+<script>
+'use strict';
+const catalog=[{"id":"PKNA-0","series":"PKNA","number":"0","title":"Evroniani","year":1996,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_000.jpg","source":"https://www.comicsbox.it/albo/PKNA_000","label":"PKNA"},{"id":"PKNA-0/2","series":"PKNA","number":"0/2","title":"Il vento del tempo","year":1996,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_0002.jpg","source":"https://www.comicsbox.it/albo/PKNA_0002","label":"PKNA"},{"id":"PKNA-0/3","series":"PKNA","number":"0/3","title":"Xadhoom!","year":1996,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_0003.jpg","source":"https://www.comicsbox.it/albo/PKNA_0003","label":"PKNA"},{"id":"PKNA-1","series":"PKNA","number":"1","title":"Ombre su Venere","year":1996,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_001.jpg","source":"https://www.comicsbox.it/albo/PKNA_001","label":"PKNA"},{"id":"PKNA-2","series":"PKNA","number":"2","title":"Due","year":1996,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_002.jpg","source":"https://www.comicsbox.it/albo/PKNA_002","label":"PKNA"},{"id":"PKNA-3","series":"PKNA","number":"3","title":"Il giorno del Sole Freddo","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_003.jpg","source":"https://www.comicsbox.it/albo/PKNA_003","label":"PKNA"},{"id":"PKNA-4","series":"PKNA","number":"4","title":"Terremoto","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_004.jpg","source":"https://www.comicsbox.it/albo/PKNA_004","label":"PKNA"},{"id":"PKNA-5","series":"PKNA","number":"5","title":"Ritratto dell’eroe da giovane","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_005.jpg","source":"https://www.comicsbox.it/albo/PKNA_005","label":"PKNA"},{"id":"PKNA-6","series":"PKNA","number":"6","title":"Spore","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_006.jpg","source":"https://www.comicsbox.it/albo/PKNA_006","label":"PKNA"},{"id":"PKNA-7","series":"PKNA","number":"7","title":"Invasione!","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_007.jpg","source":"https://www.comicsbox.it/albo/PKNA_007","label":"PKNA"},{"id":"PKNA-8","series":"PKNA","number":"8","title":"Silicio","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_008.jpg","source":"https://www.comicsbox.it/albo/PKNA_008","label":"PKNA"},{"id":"PKNA-9","series":"PKNA","number":"9","title":"Le sorgenti della Luna","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_009.jpg","source":"https://www.comicsbox.it/albo/PKNA_009","label":"PKNA"},{"id":"PKNA-10","series":"PKNA","number":"10","title":"Trauma","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_010.jpg","source":"https://www.comicsbox.it/albo/PKNA_010","label":"PKNA"},{"id":"PKNA-11","series":"PKNA","number":"11","title":"Urk","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_011.jpg","source":"https://www.comicsbox.it/albo/PKNA_011","label":"PKNA"},{"id":"PKNA-12","series":"PKNA","number":"12","title":"Seconda stesura","year":1997,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_012.jpg","source":"https://www.comicsbox.it/albo/PKNA_012","label":"PKNA"},{"id":"PKNA-13","series":"PKNA","number":"13","title":"La notte più buia","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_013.jpg","source":"https://www.comicsbox.it/albo/PKNA_013","label":"PKNA"},{"id":"PKNA-14","series":"PKNA","number":"14","title":"Carpe diem","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_014.jpg","source":"https://www.comicsbox.it/albo/PKNA_014","label":"PKNA"},{"id":"PKNA-15","series":"PKNA","number":"15","title":"Motore/azione","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_015.jpg","source":"https://www.comicsbox.it/albo/PKNA_015","label":"PKNA"},{"id":"PKNA-16","series":"PKNA","number":"16","title":"Manutenzione straordinaria","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_016.jpg","source":"https://www.comicsbox.it/albo/PKNA_016","label":"PKNA"},{"id":"PKNA-17","series":"PKNA","number":"17","title":"Stella cadente","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_017.jpg","source":"https://www.comicsbox.it/albo/PKNA_017","label":"PKNA"},{"id":"PKNA-18","series":"PKNA","number":"18","title":"Antico futuro","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_018.jpg","source":"https://www.comicsbox.it/albo/PKNA_018","label":"PKNA"},{"id":"PKNA-19","series":"PKNA","number":"19","title":"Zero assoluto","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_019.jpg","source":"https://www.comicsbox.it/albo/PKNA_019","label":"PKNA"},{"id":"PKNA-20","series":"PKNA","number":"20","title":"Mekkano","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_020.jpg","source":"https://www.comicsbox.it/albo/PKNA_020","label":"PKNA"},{"id":"PKNA-21","series":"PKNA","number":"21","title":"Tyrannic","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_021.jpg","source":"https://www.comicsbox.it/albo/PKNA_021","label":"PKNA"},{"id":"PKNA-22","series":"PKNA","number":"22","title":"Frammenti d’autunno","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_022.jpg","source":"https://www.comicsbox.it/albo/PKNA_022","label":"PKNA"},{"id":"PKNA-23","series":"PKNA","number":"23","title":"Vuoto di memoria","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_023.jpg","source":"https://www.comicsbox.it/albo/PKNA_023","label":"PKNA"},{"id":"PKNA-24","series":"PKNA","number":"24","title":"Crepuscolo","year":1998,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_024.jpg","source":"https://www.comicsbox.it/albo/PKNA_024","label":"PKNA"},{"id":"PKNA-25","series":"PKNA","number":"25","title":"Fuoco incrociato","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_025.jpg","source":"https://www.comicsbox.it/albo/PKNA_025","label":"PKNA"},{"id":"PKNA-26","series":"PKNA","number":"26","title":"Il tempo fugge","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_026.jpg","source":"https://www.comicsbox.it/albo/PKNA_026","label":"PKNA"},{"id":"PKNA-27","series":"PKNA","number":"27","title":"I mastini dell’universo","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_027.jpg","source":"https://www.comicsbox.it/albo/PKNA_027","label":"PKNA"},{"id":"PKNA-28","series":"PKNA","number":"28","title":"Metamorfosi","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_028.jpg","source":"https://www.comicsbox.it/albo/PKNA_028","label":"PKNA"},{"id":"PKNA-29","series":"PKNA","number":"29","title":"Virus","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_029.jpg","source":"https://www.comicsbox.it/albo/PKNA_029","label":"PKNA"},{"id":"PKNA-30","series":"PKNA","number":"30","title":"Fase due","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_030.jpg","source":"https://www.comicsbox.it/albo/PKNA_030","label":"PKNA"},{"id":"PKNA-31","series":"PKNA","number":"31","title":"Beato Angelico","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_031.jpg","source":"https://www.comicsbox.it/albo/PKNA_031","label":"PKNA"},{"id":"PKNA-32","series":"PKNA","number":"32","title":"Underground","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_032.jpg","source":"https://www.comicsbox.it/albo/PKNA_032","label":"PKNA"},{"id":"PKNA-33","series":"PKNA","number":"33","title":"Il giorno che verrà","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_033.jpg","source":"https://www.comicsbox.it/albo/PKNA_033","label":"PKNA"},{"id":"PKNA-34","series":"PKNA","number":"34","title":"Niente di personale","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_034.jpg","source":"https://www.comicsbox.it/albo/PKNA_034","label":"PKNA"},{"id":"PKNA-35","series":"PKNA","number":"35","title":"Clandestino a bordo","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_035.jpg","source":"https://www.comicsbox.it/albo/PKNA_035","label":"PKNA"},{"id":"PKNA-36","series":"PKNA","number":"36","title":"Lontano lontano","year":1999,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_036.jpg","source":"https://www.comicsbox.it/albo/PKNA_036","label":"PKNA"},{"id":"PKNA-37","series":"PKNA","number":"37","title":"Sotto un nuovo Sole","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_037.jpg","source":"https://www.comicsbox.it/albo/PKNA_037","label":"PKNA"},{"id":"PKNA-38","series":"PKNA","number":"38","title":"Nella nebbia","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_038.jpg","source":"https://www.comicsbox.it/albo/PKNA_038","label":"PKNA"},{"id":"PKNA-39","series":"PKNA","number":"39","title":"Cronaufragio","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_039.jpg","source":"https://www.comicsbox.it/albo/PKNA_039","label":"PKNA"},{"id":"PKNA-40","series":"PKNA","number":"40","title":"Un solo respiro","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_040.jpg","source":"https://www.comicsbox.it/albo/PKNA_040","label":"PKNA"},{"id":"PKNA-41","series":"PKNA","number":"41","title":"Agdy days","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_041.jpg","source":"https://www.comicsbox.it/albo/PKNA_041","label":"PKNA"},{"id":"PKNA-42","series":"PKNA","number":"42","title":"La sindrome di Ulisse","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_042.jpg","source":"https://www.comicsbox.it/albo/PKNA_042","label":"PKNA"},{"id":"PKNA-43","series":"PKNA","number":"43","title":"Tempo al tempo","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_043.jpg","source":"https://www.comicsbox.it/albo/PKNA_043","label":"PKNA"},{"id":"PKNA-44","series":"PKNA","number":"44","title":"Sul lato oscuro","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_044.jpg","source":"https://www.comicsbox.it/albo/PKNA_044","label":"PKNA"},{"id":"PKNA-45","series":"PKNA","number":"45","title":"Operazione Efesto","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_045.jpg","source":"https://www.comicsbox.it/albo/PKNA_045","label":"PKNA"},{"id":"PKNA-46","series":"PKNA","number":"46","title":"Nell’ombra","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_046.jpg","source":"https://www.comicsbox.it/albo/PKNA_046","label":"PKNA"},{"id":"PKNA-47","series":"PKNA","number":"47","title":"Prima dell’alba","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_047.jpg","source":"https://www.comicsbox.it/albo/PKNA_047","label":"PKNA"},{"id":"PKNA-48","series":"PKNA","number":"48","title":"Le parti e il tutto","year":2000,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_048.jpg","source":"https://www.comicsbox.it/albo/PKNA_048","label":"PKNA"},{"id":"PKNA-49/50","series":"PKNA","number":"49/50","title":"Se...","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PKNA_049.jpg","source":"https://www.comicsbox.it/albo/PKNA_049","label":"PKNA"},{"id":"PKNA-S97","series":"PKNA","number":"S97","title":"Missing","year":1997,"kind":"special","image":"https://www.comicsbox.it/cover/SDDI_007.jpg","source":"https://www.comicsbox.it/albo/SDDI_007","label":"PKNA"},{"id":"PKNA-S98","series":"PKNA","number":"S98","title":"Zero barra uno","year":1998,"kind":"special","image":"https://www.comicsbox.it/cover/SDDI_010.jpg","source":"https://www.comicsbox.it/albo/SDDI_010","label":"PKNA"},{"id":"PKNA-S99","series":"PKNA","number":"S99","title":"La fine del mondo","year":1999,"kind":"special","image":"https://www.comicsbox.it/cover/SDDI_013.jpg","source":"https://www.comicsbox.it/albo/SDDI_013","label":"PKNA"},{"id":"PKNA-S00","series":"PKNA","number":"S00","title":"Super","year":2000,"kind":"special","image":"https://www.comicsbox.it/cover/SDDI_018.jpg","source":"https://www.comicsbox.it/albo/SDDI_018","label":"PKNA"},{"id":"PK²-1","series":"PK²","number":"1","title":"Ducklair","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_001.jpg","source":"https://www.comicsbox.it/albo/PK2_001","label":"PK²"},{"id":"PK²-2","series":"PK²","number":"2","title":"Solo un po’ di paura","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_002.jpg","source":"https://www.comicsbox.it/albo/PK2_002","label":"PK²"},{"id":"PK²-3","series":"PK²","number":"3","title":"La voce del buio","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_003.jpg","source":"https://www.comicsbox.it/albo/PK2_003","label":"PK²"},{"id":"PK²-4","series":"PK²","number":"4","title":"Linee di memoria","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_004.jpg","source":"https://www.comicsbox.it/albo/PK2_004","label":"PK²"},{"id":"PK²-5","series":"PK²","number":"5","title":"La fine della storia","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_005.jpg","source":"https://www.comicsbox.it/albo/PK2_005","label":"PK²"},{"id":"PK²-6","series":"PK²","number":"6","title":"Onde alpha","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_006.jpg","source":"https://www.comicsbox.it/albo/PK2_006","label":"PK²"},{"id":"PK²-7","series":"PK²","number":"7","title":"Ancora un giorno","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_007.jpg","source":"https://www.comicsbox.it/albo/PK2_007","label":"PK²"},{"id":"PK²-8","series":"PK²","number":"8","title":"Soltanto un amico","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_008.jpg","source":"https://www.comicsbox.it/albo/PK2_008","label":"PK²"},{"id":"PK²-9","series":"PK²","number":"9","title":"Gradi di separazione","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_009.jpg","source":"https://www.comicsbox.it/albo/PK2_009","label":"PK²"},{"id":"PK²-10","series":"PK²","number":"10","title":"Altovolume","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_010.jpg","source":"https://www.comicsbox.it/albo/PK2_010","label":"PK²"},{"id":"PK²-11","series":"PK²","number":"11","title":"Il peso dei ricordi","year":2001,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_011.jpg","source":"https://www.comicsbox.it/albo/PK2_011","label":"PK²"},{"id":"PK²-12","series":"PK²","number":"12","title":"Blackout","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_012.jpg","source":"https://www.comicsbox.it/albo/PK2_012","label":"PK²"},{"id":"PK²-13","series":"PK²","number":"13","title":"Tutto e niente","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_013.jpg","source":"https://www.comicsbox.it/albo/PK2_013","label":"PK²"},{"id":"PK²-14","series":"PK²","number":"14","title":"L’ultima caccia","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_014.jpg","source":"https://www.comicsbox.it/albo/PK2_014","label":"PK²"},{"id":"PK²-15","series":"PK²","number":"15","title":"Il vero nemico","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_015.jpg","source":"https://www.comicsbox.it/albo/PK2_015","label":"PK²"},{"id":"PK²-16","series":"PK²","number":"16","title":"Capitano di ventura","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_016.jpg","source":"https://www.comicsbox.it/albo/PK2_016","label":"PK²"},{"id":"PK²-17","series":"PK²","number":"17","title":"Nel fuoco","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_017.jpg","source":"https://www.comicsbox.it/albo/PK2_017","label":"PK²"},{"id":"PK²-18","series":"PK²","number":"18","title":"Affari di famiglia","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK2_018.jpg","source":"https://www.comicsbox.it/albo/PK2_018","label":"PK²"},{"id":"PK²-Speciale","series":"PK²","number":"Speciale","title":"Duckmall","year":2001,"kind":"special","image":"https://www.comicsbox.it/cover/SDDI_021.jpg","source":"https://www.comicsbox.it/albo/SDDI_021","label":"PK²"},{"id":"Pikappa-001","series":"Pikappa","number":"001","title":"Un supereroe per caso","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_001.jpg","source":"https://www.comicsbox.it/albo/PK3_001","label":"PIKAPPA"},{"id":"Pikappa-002","series":"Pikappa","number":"002","title":"Toyland","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_002.jpg","source":"https://www.comicsbox.it/albo/PK3_002","label":"PIKAPPA"},{"id":"Pikappa-003","series":"Pikappa","number":"003","title":"Un mondo perfetto","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_003.jpg","source":"https://www.comicsbox.it/albo/PK3_003","label":"PIKAPPA"},{"id":"Pikappa-004","series":"Pikappa","number":"004","title":"Allarme","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_004.jpg","source":"https://www.comicsbox.it/albo/PK3_004","label":"PIKAPPA"},{"id":"Pikappa-005","series":"Pikappa","number":"005","title":"Robophobia","year":2002,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_005.jpg","source":"https://www.comicsbox.it/albo/PK3_005","label":"PIKAPPA"},{"id":"Pikappa-006","series":"Pikappa","number":"006","title":"Una galassia lontana","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_006.jpg","source":"https://www.comicsbox.it/albo/PK3_006","label":"PIKAPPA"},{"id":"Pikappa-007","series":"Pikappa","number":"007","title":"O.G.R.E.","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_007.jpg","source":"https://www.comicsbox.it/albo/PK3_007","label":"PIKAPPA"},{"id":"Pikappa-008","series":"Pikappa","number":"008","title":"Kronin","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_008.jpg","source":"https://www.comicsbox.it/albo/PK3_008","label":"PIKAPPA"},{"id":"Pikappa-009","series":"Pikappa","number":"009","title":"Grandi speranze","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_009.jpg","source":"https://www.comicsbox.it/albo/PK3_009","label":"PIKAPPA"},{"id":"Pikappa-010","series":"Pikappa","number":"010","title":"Senza ritorno","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_010.jpg","source":"https://www.comicsbox.it/albo/PK3_010","label":"PIKAPPA"},{"id":"Pikappa-011","series":"Pikappa","number":"011","title":"L’eracolatore","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_011.jpg","source":"https://www.comicsbox.it/albo/PK3_011","label":"PIKAPPA"},{"id":"Pikappa-012","series":"Pikappa","number":"012","title":"Un lungo addio","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_012.jpg","source":"https://www.comicsbox.it/albo/PK3_012","label":"PIKAPPA"},{"id":"Pikappa-013","series":"Pikappa","number":"013","title":"Creature dagli abissi","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_013.jpg","source":"https://www.comicsbox.it/albo/PK3_013","label":"PIKAPPA"},{"id":"Pikappa-014","series":"Pikappa","number":"014","title":"Turisti dallo spazio","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_014.jpg","source":"https://www.comicsbox.it/albo/PK3_014","label":"PIKAPPA"},{"id":"Pikappa-015","series":"Pikappa","number":"015","title":"Lo sciame","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_015.jpg","source":"https://www.comicsbox.it/albo/PK3_015","label":"PIKAPPA"},{"id":"Pikappa-016","series":"Pikappa","number":"016","title":"Protospecie","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_016.jpg","source":"https://www.comicsbox.it/albo/PK3_016","label":"PIKAPPA"},{"id":"Pikappa-017","series":"Pikappa","number":"017","title":"I Senzanome","year":2003,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_017.jpg","source":"https://www.comicsbox.it/albo/PK3_017","label":"PIKAPPA"},{"id":"Pikappa-018","series":"Pikappa","number":"018","title":"Lo spirito della città","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_018.jpg","source":"https://www.comicsbox.it/albo/PK3_018","label":"PIKAPPA"},{"id":"Pikappa-019","series":"Pikappa","number":"019","title":"Il campione","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_019.jpg","source":"https://www.comicsbox.it/albo/PK3_019","label":"PIKAPPA"},{"id":"Pikappa-020","series":"Pikappa","number":"020","title":"I cacciatori","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_020.jpg","source":"https://www.comicsbox.it/albo/PK3_020","label":"PIKAPPA"},{"id":"Pikappa-021","series":"Pikappa","number":"021","title":"Serie Zeta","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_021.jpg","source":"https://www.comicsbox.it/albo/PK3_021","label":"PIKAPPA"},{"id":"Pikappa-022","series":"Pikappa","number":"022","title":"Trasporto valori","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_022.jpg","source":"https://www.comicsbox.it/albo/PK3_022","label":"PIKAPPA"},{"id":"Pikappa-023","series":"Pikappa","number":"023","title":"Senza via di scampo","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_023.jpg","source":"https://www.comicsbox.it/albo/PK3_023","label":"PIKAPPA"},{"id":"Pikappa-024","series":"Pikappa","number":"024","title":"Nemico invisibile","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_024.jpg","source":"https://www.comicsbox.it/albo/PK3_024","label":"PIKAPPA"},{"id":"Pikappa-025","series":"Pikappa","number":"025","title":"Attacco frontale","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_025.jpg","source":"https://www.comicsbox.it/albo/PK3_025","label":"PIKAPPA"},{"id":"Pikappa-026","series":"Pikappa","number":"026","title":"Il re guerriero","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_026.jpg","source":"https://www.comicsbox.it/albo/PK3_026","label":"PIKAPPA"},{"id":"Pikappa-027","series":"Pikappa","number":"027","title":"Uno + Uno","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_027.jpg","source":"https://www.comicsbox.it/albo/PK3_027","label":"PIKAPPA"},{"id":"Pikappa-028","series":"Pikappa","number":"028","title":"A 9 secondi dalla fine","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_028.jpg","source":"https://www.comicsbox.it/albo/PK3_028","label":"PIKAPPA"},{"id":"Pikappa-029","series":"Pikappa","number":"029","title":"L’orologio del mondo","year":2004,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_029.jpg","source":"https://www.comicsbox.it/albo/PK3_029","label":"PIKAPPA"},{"id":"Pikappa-030","series":"Pikappa","number":"030","title":"Vigilia bianca","year":2005,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_030.jpg","source":"https://www.comicsbox.it/albo/PK3_030","label":"PIKAPPA"},{"id":"Pikappa-031","series":"Pikappa","number":"031","title":"Sotto zero","year":2005,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_031.jpg","source":"https://www.comicsbox.it/albo/PK3_031","label":"PIKAPPA"},{"id":"Pikappa-032","series":"Pikappa","number":"032","title":"The end?","year":2005,"kind":"regular","image":"https://www.comicsbox.it/cover/PK3_032.jpg","source":"https://www.comicsbox.it/albo/PK3_032","label":"PIKAPPA"},{"id":"UPK-Appgrade-16","series":"Universo PK","number":"16","title":"Universo PK · Arrivano i mostri","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_016.jpg","source":"https://www.comicsbox.it/albo/PKAPG_016","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off what if"},{"id":"UPK-Appgrade-17","series":"Universo PK","number":"17","title":"Universo PK · Dura è la notte","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_017.jpg","source":"https://www.comicsbox.it/albo/PKAPG_017","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off what if"},{"id":"UPK-Appgrade-18","series":"Universo PK","number":"18","title":"Universo PK · Tempo da perdere","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_018.jpg","source":"https://www.comicsbox.it/albo/PKAPG_018","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off what if"},{"id":"UPK-Appgrade-19","series":"Universo PK","number":"19","title":"Universo PK · Non è mai troppo tardi","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_019.jpg","source":"https://www.comicsbox.it/albo/PKAPG_019","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off what if"},{"id":"UPK-Appgrade-20","series":"Universo PK","number":"20","title":"Universo PK · Tornando indietro","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_020.jpg","source":"https://www.comicsbox.it/albo/PKAPG_020","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off what if"},{"id":"UPK-Appgrade-21","series":"Universo PK","number":"21","title":"Paperinik e i conti con le realtà","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_021.jpg","source":"https://www.comicsbox.it/albo/PKAPG_021","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off what if"},{"id":"UPK-Appgrade-22","series":"Universo PK","number":"22","title":"La macchina del Fangus · Scuola di media","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_022.jpg","source":"https://www.comicsbox.it/albo/PKAPG_022","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off"},{"id":"UPK-Appgrade-23","series":"Universo PK","number":"23","title":"La macchina del Fangus · Tutto a rovescio","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_023.jpg","source":"https://www.comicsbox.it/albo/PKAPG_023","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off"},{"id":"UPK-Appgrade-24","series":"Universo PK","number":"24","title":"La macchina del Fangus · episodio 3/5","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_024.jpg","source":"https://www.comicsbox.it/albo/PKAPG_024","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off"},{"id":"UPK-Appgrade-25","series":"Universo PK","number":"25","title":"La macchina del Fangus · episodio 4/5","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_025.jpg","source":"https://www.comicsbox.it/albo/PKAPG_025","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off"},{"id":"UPK-Appgrade-26","series":"Universo PK","number":"26","title":"La macchina del Fangus · episodio 5/5","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_026.jpg","source":"https://www.comicsbox.it/albo/PKAPG_026","label":"Appgrade","edition":"Paperinik Appgrade · prima pubblicazione · spin-off"},{"id":"PKNE-Topolino-3058","series":"PKNE","number":"3058","title":"Potere e potenza · parte 1/4","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3058.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3058","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3058 PK"},{"id":"PKNE-Topolino-3059","series":"PKNE","number":"3059","title":"Potere e potenza · parte 2/4","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3059.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3059","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3059 PK"},{"id":"PKNE-Topolino-3060","series":"PKNE","number":"3060","title":"Potere e potenza · parte 3/4","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3060.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3060","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3060 PK"},{"id":"PKNE-Topolino-3061","series":"PKNE","number":"3061","title":"Potere e potenza · parte 4/4","year":2014,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3061.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3061","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3061 PK"},{"id":"PKNE-Topolino-3102","series":"PKNE","number":"3102","title":"Gli argini del tempo · parte 1/4","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3102.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3102","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3102 PK"},{"id":"PKNE-Topolino-3103","series":"PKNE","number":"3103","title":"Gli argini del tempo · parte 2/4","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3103.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3103","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3103 PK"},{"id":"PKNE-Topolino-3104","series":"PKNE","number":"3104","title":"Gli argini del tempo · parte 3/4","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3104.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3104","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3104 PK"},{"id":"PKNE-Topolino-3105","series":"PKNE","number":"3105","title":"Gli argini del tempo · parte 4/4","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3105.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3105","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3105 PK"},{"id":"PKNE-Topolino-3127","series":"PKNE","number":"3127","title":"Il Raggio Nero · parte 1/5","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3127.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3127","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3127 PK"},{"id":"PKNE-Topolino-3128","series":"PKNE","number":"3128","title":"Il Raggio Nero · parte 2/5","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3128.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3128","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3128 PK"},{"id":"PKNE-Topolino-3129","series":"PKNE","number":"3129","title":"Il Raggio Nero · parte 3/5","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3129.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3129","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3129 PK"},{"id":"PKNE-Topolino-3130","series":"PKNE","number":"3130","title":"Il Raggio Nero · parte 4/5","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3130.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3130","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3130 PK"},{"id":"PKNE-Topolino-3131","series":"PKNE","number":"3131","title":"Il Raggio Nero · parte 5/5","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3131.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3131","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3131 PK"},{"id":"PKNE-Topolino-3153","series":"PKNE","number":"3153","title":"Timecrime · parte 1/2","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3153.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3153","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3153 PK"},{"id":"PKNE-Topolino-3154","series":"PKNE","number":"3154","title":"Timecrime · parte 2/2","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3154.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3154","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3154 PK"},{"id":"PKNE-Topolino-3181","series":"PKNE","number":"3181","title":"Cronaca di un ritorno · parte 1/4","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3181.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3181","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3181 PK"},{"id":"PKNE-Topolino-3183","series":"PKNE","number":"3183","title":"Cronaca di un ritorno · parte 2/4","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3183.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3183","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3183 PK"},{"id":"PKNE-Topolino-3184","series":"PKNE","number":"3184","title":"Cronaca di un ritorno · parte 3/4","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3184.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3184","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3184 PK"},{"id":"PKNE-Topolino-3185","series":"PKNE","number":"3185","title":"Cronaca di un ritorno · parte 4/4","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3185.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3185","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3185 PK"},{"id":"PKNE-Topolino-3205","series":"PKNE","number":"3205","title":"Il marchio di Moldrock · parte 1/4","year":2017,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3205.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3205","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3205 PK"},{"id":"PKNE-Topolino-3206","series":"PKNE","number":"3206","title":"Il marchio di Moldrock · parte 2/4","year":2017,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3206.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3206","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3206 PK"},{"id":"PKNE-Topolino-3207","series":"PKNE","number":"3207","title":"Il marchio di Moldrock · parte 3/4","year":2017,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3207.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3207","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3207 PK"},{"id":"PKNE-Topolino-3208","series":"PKNE","number":"3208","title":"Il marchio di Moldrock · parte 4/4","year":2017,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3208.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3208","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3208 PK"},{"id":"PKNE-Topolino-3250","series":"PKNE","number":"3250","title":"L'orizzonte degli eventi · parte 1/5","year":2018,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3250.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3250","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3250 PK"},{"id":"PKNE-Topolino-3251","series":"PKNE","number":"3251","title":"L'orizzonte degli eventi · parte 2/5","year":2018,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3251.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3251","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3251 PK"},{"id":"PKNE-Topolino-3252","series":"PKNE","number":"3252","title":"L'orizzonte degli eventi · parte 3/5","year":2018,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3252.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3252","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3252 PK"},{"id":"PKNE-Topolino-3253","series":"PKNE","number":"3253","title":"L'orizzonte degli eventi · parte 4/5","year":2018,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3253.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3253","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3253 PK"},{"id":"PKNE-Topolino-3254","series":"PKNE","number":"3254","title":"L'orizzonte degli eventi · parte 5/5","year":2018,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3254.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3254","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3254 PK"},{"id":"PKNE-Topolino-3287","series":"PKNE","number":"3287","title":"Droidi · parte 1/3","year":2018,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3287.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3287","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3287 PK"},{"id":"PKNE-Topolino-3288","series":"PKNE","number":"3288","title":"Droidi · parte 2/3","year":2018,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3288.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3288","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3288 PK"},{"id":"PKNE-Topolino-3289","series":"PKNE","number":"3289","title":"Droidi · parte 3/3","year":2018,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3289.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3289","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3289 PK"},{"id":"PKNE-Topolino-3335","series":"PKNE","number":"3335","title":"Un nuovo eroe · Prologo","year":2019,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3335.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3335","label":"PKNE","edition":"Topolino · prologo","format":"tascabile","notes":"","vintedQuery":"Topolino 3335 PK prologo"},{"id":"PKNE-Topolino-3407","series":"PKNE","number":"3407","title":"Una leggendaria notte qualunque","year":2021,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3407.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3407","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3407 PK"},{"id":"PKNE-Topolino-3437","series":"PKNE","number":"3437","title":"Zona franca · parte 1/2","year":2021,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3437.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3437","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3437 PK"},{"id":"PKNE-Topolino-3438","series":"PKNE","number":"3438","title":"Zona franca · parte 2/2","year":2021,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3438.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3438","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3438 PK"},{"id":"PKNE-Topolino-3545","series":"PKNE","number":"3545","title":"Rinascita","year":2023,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3545.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3545","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3545 PK"},{"id":"PKNE-Topolino-3545-variant","series":"PKNE","number":"3545 V","title":"Rinascita · Variant PK","year":2023,"kind":"variant","image":"https://www.comicsbox.it/cover/TOPOLIB_3545B.jpg","source":"https://pkhack.altervista.org/paperinik-new-era-rinascita/","label":"PKNE","edition":"Variant Lorenzo Pastrovicchio","format":"tascabile","notes":"","vintedQuery":"Topolino 3545 variant PK Rinascita","alt":["https://pkhack.altervista.org/wp/wp-content/uploads/2023/11/Topolino3545.jpeg"]},{"id":"PKNE-Topolino-3596","series":"PKNE","number":"3596","title":"Metallo pesante","year":2024,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3596.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3596","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3596 PK"},{"id":"PKNE-Topolino-3668","series":"PKNE","number":"3668","title":"L'esperimento Abominio · parte 1/2","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3668.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3668","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3668 PK"},{"id":"PKNE-Topolino-3668-variant","series":"PKNE","number":"3668 V","title":"L'esperimento Abominio · Instant Variant PK","year":2026,"kind":"variant","image":"https://pkhack.altervista.org/wp/wp-content/uploads/2025/11/Topolino_3668_Variant.png","source":"https://www.comicsbox.it/albo/TOPOLIB_3668B","label":"PKNE","edition":"Variant Carmine Di Giandomenico","format":"tascabile","notes":"","vintedQuery":"Topolino 3668 variant PK"},{"id":"PKNE-Topolino-3669","series":"PKNE","number":"3669","title":"L'esperimento Abominio · parte 2/2","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3669.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3669","label":"PKNE","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3669 PK"},{"id":"Fuoriserie-01","series":"Fuoriserie","number":"1","title":"Un nuovo eroe","year":2019,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_001.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_001","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 1 PK Un nuovo eroe"},{"id":"Fuoriserie-02","series":"Fuoriserie","number":"2","title":"Danger Dome","year":2020,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_002.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_002","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 2 PK Danger Dome"},{"id":"Fuoriserie-03","series":"Fuoriserie","number":"3","title":"Ur-Evron","year":2020,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_003.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_003","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 3 PK Ur-Evron"},{"id":"Fuoriserie-04","series":"Fuoriserie","number":"4","title":"I giorni di Evron","year":2021,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_004.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_004","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 4 PK I giorni di Evron"},{"id":"Fuoriserie-05","series":"Fuoriserie","number":"5","title":"Obsidian","year":2021,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_005.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_005","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 5 PK Obsidian"},{"id":"Fuoriserie-06","series":"Fuoriserie","number":"6","title":"I giorni di PK","year":2021,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_006.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_006","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 6 PK I giorni di Pikappa"},{"id":"Fuoriserie-07","series":"Fuoriserie","number":"7","title":"La danza del Ragno d’oro","year":2022,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_007.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_007","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 7 PK La danza del Ragno d’oro"},{"id":"Fuoriserie-08","series":"Fuoriserie","number":"8","title":"Makemake","year":2022,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_008.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_008","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 8 PK Makemake"},{"id":"Fuoriserie-09","series":"Fuoriserie","number":"9","title":"Il principio di Voyda","year":2022,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_009.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_009","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 9 PK Il principio di Voyda"},{"id":"Fuoriserie-10","series":"Fuoriserie","number":"10","title":"Esprimi un desiderio","year":2023,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_010.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_010","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 10 PK Esprimi un desiderio"},{"id":"Fuoriserie-11","series":"Fuoriserie","number":"11","title":"Il maestro del Silenzio","year":2023,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_011.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_011","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 11 PK Il maestro del Silenzio"},{"id":"Fuoriserie-12","series":"Fuoriserie","number":"12","title":"Troppo vicini","year":2023,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_012.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_012","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 12 PK Troppo vicini"},{"id":"Fuoriserie-13","series":"Fuoriserie","number":"13","title":"Il nemico del ragno","year":2023,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_013.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_013","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 13 PK Il nemico del ragno"},{"id":"Fuoriserie-14","series":"Fuoriserie","number":"14","title":"I conti con la realtà","year":2024,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOFUORI_014.jpg","source":"https://www.comicsbox.it/albo/TOPOFUORI_014","label":"Fuoriserie","edition":"Topolino Fuoriserie · prima stampa","format":"cartonato","notes":"","vintedQuery":"Topolino Fuoriserie 14 PK I conti con la realtà"},{"id":"PKEDA--1-regular","series":"PKEDA","number":"-1","title":"Meno uno all'alba","year":2026,"kind":"regular","image":"https://www.panini.it/media/catalog/product/1/w/1wspev058_0.jpg","source":"https://www.panini.it/shp_ita_it/pk-meno-uno-all-alba-1wspev058-it08.html","label":"PKEDA","edition":"Copertina regular","format":"spillato","notes":"","vintedQuery":"PK -1 Meno uno all'alba regular"},{"id":"PKEDA--1-blank","series":"PKEDA","number":"-1 V1","title":"Meno uno all'alba · Blank","year":2026,"kind":"variant","image":"https://www.panini.it/media/catalog/product/1/w/1wspev058v_0_1.jpg","source":"https://www.panini.it/shp_ita_it/pk-meno-uno-all-alba-variant-blank-1wspev058v-it08.html","label":"PKEDA","edition":"Variant Blank","format":"spillato","notes":"","vintedQuery":"PK Meno Uno all alba variant blank"},{"id":"PKEDA--1-mottura","series":"PKEDA","number":"-1 V2","title":"Meno uno all'alba · Paolo Mottura","year":2026,"kind":"variant","image":"https://www.panini.it/media/catalog/product/1/w/1wspev058v2_0.jpg","source":"https://www.panini.it/shp_ita_it/pk-meno-uno-all-alba-variant-paolo-mottura-1wspev058v2-it08.html","label":"PKEDA","edition":"Variant Paolo Mottura","format":"spillato","notes":"","vintedQuery":"PK meno uno all alba variant Mottura"},{"id":"PKEDA--1-paniniclub","series":"PKEDA","number":"-1 V3","title":"Meno uno all'alba · Panini Club","year":2026,"kind":"variant","image":"https://pkhack.altervista.org/wp/wp-content/uploads/2025/11/Variant_Pastro.jpg","source":"https://www.panini.it/media/paniniFiles/Reg_OP_PK_MENO_UNO_ALL_ALBA.pdf","label":"PKEDA","edition":"Variant esclusiva Lorenzo Pastrovicchio · Panini Club","format":"spillato","notes":"","vintedQuery":"PK meno uno all alba Pastrovicchio Panini Club variant"},{"id":"PKEDA--2-regular","series":"PKEDA","number":"-2","title":"Tutta un’altra storia","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/DSNYSPEVEN_061.jpg","source":"https://www.google.com/search?q=PKEDA+-2+Tutta+un%27altra+storia+Panini","label":"PKEDA","edition":"Copertina regular","format":"spillato","notes":"","vintedQuery":"PK -2 Tutta un’altra storia regular"},{"id":"PKEDA--2-celoni","series":"PKEDA","number":"-2 V","title":"Tutta un’altra storia · Fabio Celoni","year":2026,"kind":"variant","image":"https://www.comicsbox.it/cover/DSNYSPEVEN_061B.jpg","source":"https://mycomics-production.vercel.app/shop/pk-2-tutta-unaltra-storia-variant-fabio-celoni-disney-special-events-61-speciale-panini-comics-italiano","label":"PKEDA","edition":"Variant Fabio Celoni","format":"spillato","notes":"","vintedQuery":"PK -2 tutta un altra storia variant Fabio Celoni"},{"id":"PKEDA--3-regular","series":"PKEDA","number":"-3","title":"Un passo ancora","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/DSNYSPEVEN_062.jpg","source":"https://www.google.com/search?q=PKEDA+-3+Un+passo+ancora+Panini","label":"PKEDA","edition":"Copertina regular · Lucca 2026, in edicola dal 26/11","format":"spillato","notes":"","vintedQuery":"PK -3 Un passo ancora regular"},{"id":"PKEDA--3-dimeo","series":"PKEDA","number":"-3 V","title":"Un passo ancora · Simone Di Meo","year":2026,"kind":"variant","image":"https://www.nonsolofumetto.it/cdn/shop/files/80051231-preview.jpg?v=1793198987&width=1000","source":"https://www.nonsolofumetto.it/products/pk-3-un-passo-ancora-variant-simone-di-meo-disney-special-events-62-speciale-panini-comics-italiano","label":"PKEDA","edition":"Variant Simone Di Meo · Lucca 2026, in edicola dal 26/11","format":"spillato","notes":"","vintedQuery":"PK -3 un passo ancora variant Simone Di Meo"},{"id":"Tube-Topolino-3146","series":"PK Tube","number":"3146","title":"PK Tube","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3146.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3146","label":"PK Tube","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3146 PK Tube"},{"id":"Tube-Topolino-3147","series":"PK Tube","number":"3147","title":"Il giorno del fondatore","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3147.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3147","label":"PK Tube","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3147 PK Tube"},{"id":"Tube-Topolino-3148","series":"PK Tube","number":"3148","title":"Il peso della conoscenza","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3148.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3148","label":"PK Tube","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3148 PK Tube"},{"id":"Tube-Topolino-3149","series":"PK Tube","number":"3149","title":"Cambio di programma","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3149.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3149","label":"PK Tube","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3149 PK Tube"},{"id":"Tube-Topolino-3150","series":"PK Tube","number":"3150","title":"Missione di (sub)routine","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3150.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3150","label":"PK Tube","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3150 PK Tube"},{"id":"Tube-Topolino-3152","series":"PK Tube","number":"3152","title":"Soccorso obbligato","year":2016,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3152.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3152","label":"PK Tube","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3152 PK Tube"},{"id":"Untold-Paperinik-112","series":"Untold Tales","number":"112","title":"Cacciatori di mondi","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_163.jpg","source":"https://www.comicsbox.it/albo/PKAPG_163","label":"Untold Tales","edition":"Paperinik mensile · prima pubblicazione · Paperinik Appgrade 163","format":"tascabile","notes":"","vintedQuery":"Paperinik 112 2026 PK Untold Tales"},{"id":"Untold-Paperinik-113","series":"Untold Tales","number":"113","title":"Halo","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_164.jpg","source":"https://www.comicsbox.it/albo/PKAPG_164","label":"Untold Tales","edition":"Paperinik mensile · prima pubblicazione · Paperinik Appgrade 164","format":"tascabile","notes":"","vintedQuery":"Paperinik 113 2026 PK Untold Tales"},{"id":"Untold-Paperinik-114","series":"Untold Tales","number":"114","title":"Chiedilo alle stelle","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_165.jpg","source":"https://www.comicsbox.it/albo/PKAPG_165","label":"Untold Tales","edition":"Paperinik mensile · prima pubblicazione · Paperinik Appgrade 165","format":"tascabile","notes":"","vintedQuery":"Paperinik 114 2026 PK Untold Tales"},{"id":"Untold-Paperinik-115","series":"Untold Tales","number":"115","title":"Un ultimo desiderio","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_166.jpg","source":"https://www.comicsbox.it/albo/PKAPG_166","label":"Untold Tales","edition":"Paperinik mensile · prima pubblicazione · Paperinik Appgrade 166","format":"tascabile","notes":"","vintedQuery":"Paperinik 115 2026 PK Untold Tales"},{"id":"Untold-Paperinik-119","series":"Untold Tales","number":"119","title":"Untold Tales · episodio 5/6","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_170.jpg","source":"https://www.comicsbox.it/albo/PKAPG_170","label":"Paperinik","edition":"Paperinik mensile · prima pubblicazione · novembre 2026 · Paperinik Appgrade 170","upcoming":true},{"id":"Untold-Paperinik-120","series":"Untold Tales","number":"120","title":"Untold Tales · episodio 6/6","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/PKAPG_171.jpg","source":"https://www.comicsbox.it/albo/PKAPG_171","label":"Paperinik","edition":"Paperinik mensile · prima pubblicazione · dicembre 2026 · Paperinik Appgrade 171","upcoming":true},{"id":"PKNEW-incubo","series":"Nuovi PK","number":"30°","title":"Incubo sul fondo · 30° anniversario","year":2026,"kind":"regular","image":"https://pkhack.altervista.org/wp/wp-content/uploads/2025/11/PK_Box.jpg","source":"https://pkhack.altervista.org/pk-whats-next/","label":"Nuovi PK","edition":"Prima edizione completa · cofanetto metallico (lo storyboard incompiuto era apparso solo in PK Il Mito)","format":"cartonato","notes":"","vintedQuery":"PK Incubo sul fondo 30 anniversario cofanetto 2026"},{"id":"PKNEW-3674","series":"Nuovi PK","number":"3674","title":"Very Cool","year":2026,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3674.jpg","source":"https://www.topolino.it/topolino/3674/","label":"Nuovi PK","edition":"Topolino · prima pubblicazione","format":"tascabile","notes":"","vintedQuery":"Topolino 3674 PK Very Cool"},{"id":"EXTRA-MEGA-15","series":"Extra","number":"15","title":"Nessuno li può fermare (tavola)","year":1997,"kind":"regular","image":"","source":"https://howtoreadpkna.neocities.org/easilymissed","label":"MEGAzine","edition":"Disney MEGAzine · prima pubblicazione · tavola da una pagina · anno indicativo"},{"id":"EXTRA-MEGA-17","series":"Extra","number":"17","title":"Le regole del gioco · Un’impresa luminosa (tavole)","year":1997,"kind":"regular","image":"","source":"https://howtoreadpkna.neocities.org/easilymissed","label":"MEGAzine","edition":"Disney MEGAzine · prima pubblicazione · due tavole · anno indicativo"},{"id":"EXTRA-MEGA-29","series":"Extra","number":"29","title":"Istruzioni per l’uso (tavola)","year":1997,"kind":"regular","image":"","source":"https://howtoreadpkna.neocities.org/easilymissed","label":"MEGAzine","edition":"Disney MEGAzine · prima pubblicazione · tavola da una pagina · anno indicativo"},{"id":"EXTRA-MEGA-36","series":"Extra","number":"36","title":"Il mondo di PK · Atti I–V","year":1997,"kind":"regular","image":"","source":"https://howtoreadpkna.neocities.org/easilymissed","label":"MEGAzine","edition":"Disney MEGAzine · prima pubblicazione · anno indicativo"},{"id":"EXTRA-MEGA-37","series":"Extra","number":"37","title":"Tre tavole PK","year":1997,"kind":"regular","image":"","source":"https://howtoreadpkna.neocities.org/easilymissed","label":"MEGAzine","edition":"Disney MEGAzine · prima pubblicazione · tre tavole · anno indicativo"},{"id":"EXTRA-MEGA-58","series":"Extra","number":"58","title":"Tavole PK","year":1998,"kind":"regular","image":"","source":"https://howtoreadpkna.neocities.org/easilymissed","label":"MEGAzine","edition":"Disney MEGAzine · prima pubblicazione · anno indicativo"},{"id":"EXTRA-RIDI-2","series":"Extra","number":"2","title":"Paper Bat Niu’ Adventures: Nervoniani","year":1997,"kind":"regular","image":"","source":"https://pkhack.altervista.org/guida-alle-ristampe/","label":"Ridi Topolino","edition":"Ridi Topolino · parodia di PK di Tito Faraci · prima pubblicazione"},{"id":"EXTRA-GAME-2002","series":"Extra","number":"—","title":"Chi è PK? · albetto del videogioco","year":2002,"kind":"special","image":"","source":"https://pkhack.altervista.org/guida-alle-ristampe/","label":"Videogioco","edition":"Allegato all’edizione speciale del videogioco Ubisoft · origini in stile Pikappa"},{"id":"EXTRA-MITO-29","series":"Extra","number":"29","title":"PK Il Mito 29 · Mess@gio in codice versione manga","year":2012,"kind":"regular","image":"","source":"https://howtoreadpkna.neocities.org/easilymissed","label":"PK Il Mito","edition":"Ristampa con inedito: remake manga di Claudio Sciarrone"},{"id":"EXTRA-MITO-36","series":"Extra","number":"36","title":"PK Il Mito 36 · Incubo sul fondo e Fahrenheit","year":2012,"kind":"regular","image":"","source":"https://howtoreadpkna.neocities.org/easilymissed","label":"PK Il Mito","edition":"Ristampa con inediti: le storie incompiute, solo in parte disegnate"},{"id":"EXTRA-DELUXE-2","series":"Extra","number":"2","title":"Potere e potenza · finale alternativo","year":2015,"kind":"regular","image":"https://www.comicsbox.it/cover/TPLDELUXE_002.jpg","source":"https://www.comicsbox.it/albo/TPLDELUXE_002","label":"De Luxe","edition":"Topolino Limited De Luxe Edition 2 · contiene l’inizio alternativo e il finale alternativo di due tavole"},{"id":"EXTRA-CSP-5","series":"Extra","number":"5","title":"PK olandese · prima storia lunga","year":2022,"kind":"regular","image":"https://www.panini.it/media/catalog/product/1/w/1wcsup005_0.jpg","source":"https://www.panini.it/shp_ita_it/il-club-dei-supereroi-5-1wcsup005-it08.html","label":"Club Supereroi","edition":"Il Club dei Supereroi · prima edizione italiana di una storia nata per l’Olanda · marzo 2022","alt":["https://www.comicsbox.it/cover/CLUBSUP_005.jpg"]},{"id":"EXTRA-CSP-6","series":"Extra","number":"6","title":"PK olandesi · ultime due storie lunghe","year":2022,"kind":"regular","image":"https://www.panini.it/media/catalog/product/1/w/1wcsup006_0.jpg","source":"https://www.panini.it/shp_ita_it/il-club-dei-supereroi-6-1wcsup006-it08.html","label":"Club Supereroi","edition":"Il Club dei Supereroi · prima edizione italiana di storie nate per l’Olanda · maggio 2022","alt":["https://www.comicsbox.it/cover/CLUBSUP_006.jpg"]},{"id":"EXTRA-TOPO-3648","series":"Extra","number":"3648","title":"Vignetta PK di Silvia Ziche","year":2025,"kind":"regular","image":"https://www.comicsbox.it/cover/TOPOLIB_3648.jpg","source":"https://www.comicsbox.it/albo/TOPOLIB_3648","label":"Topolino","edition":"Topolino · gag a vignetta singola · prima pubblicazione"}];
+const EMBEDDED_DATA={};
+const KEY='pk-vault-v5';
+const PRISTINE='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+const $=s=>document.getElementById(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const icon=id=>`<svg class="icon"><use href="#i-${id}"/></svg>`;
+const SERIES_ORDER=['PKNA','PK²','Pikappa','Universo PK','PKNE','Fuoriserie','PKEDA','PK Tube','Untold Tales','Nuovi PK','Extra'];
+const CUSTOMKEY='pk-vault-custom';
+let customItems=[];try{const c=JSON.parse(localStorage.getItem(CUSTOMKEY)||'[]');if(Array.isArray(c))customItems=c.filter(x=>x&&x.id&&x.series&&x.title)}catch(e){}
+for(const c of customItems)catalog.push({...c,custom:true});
+const byId=new Map(catalog.map(i=>[i.id,i]));
+let SERIES=[];const refreshSeries=()=>{SERIES=[...SERIES_ORDER,...new Set(catalog.map(i=>i.series).filter(x=>!SERIES_ORDER.includes(x)))]};refreshSeries();
+const saveCustom=()=>{try{localStorage.setItem(CUSTOMKEY,JSON.stringify(customItems))}catch(e){toast('Spazio esaurito sul dispositivo')}};
+
+/* ---------- Dati ---------- */
+let entries={...EMBEDDED_DATA};
+for(const key of ['pk-archivio-v3','pkcatalogo-v4','pk-archivio-v2','pk-collezione-v1',KEY]){try{const raw=localStorage.getItem(key);if(!raw)continue;const j=JSON.parse(raw);const rows=j.data&&typeof j.data==='object'&&!Array.isArray(j.data)?j.data:j;if(rows&&typeof rows==='object')for(const [id,val] of Object.entries(rows))if(val&&typeof val==='object')entries[id]={...(entries[id]||{}),...val}}catch(e){}}
+for(const [o,n] of Object.entries({'PKNA-Speciale 1997':'PKNA-S97','PKNA-Speciale 1998':'PKNA-S98','PKNA-Speciale 1999':'PKNA-S99','PKNA-Speciale 2000':'PKNA-S00','PK²-Speciale 2001':'PK²-Speciale'}))if(entries[o]&&!entries[n])entries[n]=entries[o];
+const row=id=>entries[id]||{};
+function persist(quiet){try{localStorage.setItem(KEY,JSON.stringify(entries));return true}catch(e){if(!quiet)toast('Salvataggio non riuscito: esporta un backup');return false}}
+
+const PREFKEY='pk-vault-prefs';
+const DEF={series:'Tutte',owned:'Tutti',type:'Tutti',sort:'serie',density:'3',dim:'no',cover:'tutte',search:''};
+let prefs={...DEF};
+try{const sp=JSON.parse(localStorage.getItem(PREFKEY)||'{}');for(const k of ['series','owned','type','sort','density','dim','cover'])if(typeof sp[k]==='string')prefs[k]=sp[k]}catch(e){}
+if(prefs.series!=='Tutte'&&!SERIES.includes(prefs.series))prefs.series='Tutte';
+function savePrefs(){try{const {search,...rest}=prefs;localStorage.setItem(PREFKEY,JSON.stringify(rest))}catch(e){}}
+
+let selected=new Set(),selectMode=false,toastTimer=null;
+function toast(msg){const n=$('toast');n.textContent=msg;n.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>n.classList.remove('show'),2200)}
+const buzz=ms=>{try{navigator.vibrate?.(ms)}catch(e){}};
+
+/* ---------- Livelli + tasto Indietro del telefono ---------- */
+const layers=[];
+function pushLayer(close){layers.push(close);try{history.pushState({pk:layers.length},'')}catch(e){}}
+function backLayer(){if(!layers.length)return;try{history.back()}catch(e){layers.pop()?.()}}
+window.addEventListener('popstate',()=>{const c=layers.pop();if(c)c()});
+
+/* ---------- Copertine e miglioramento ---------- */
+const ENHKEY='pk-vault-enhance';
+let enhanceOn=true;try{enhanceOn=localStorage.getItem(ENHKEY)!=='off'}catch(e){}
+const DPR=Math.min(3,Math.max(1,window.devicePixelRatio||1));
+function enhancedUrl(src,cssW,sharp=1){
+ if(!enhanceOn||!src||!/^https?:\/\//i.test(src)||/wsrv\.nl/.test(src))return src;
+ const w=Math.min(1800,Math.round(cssW*DPR/10)*10);
+ return 'https://wsrv.nl/?url='+encodeURIComponent(src)+'&w='+w+'&fit=inside&sharp='+sharp+'&sharpf=1&sharpj=2&q=88&output=webp&il';
+}
+function cleanImageUrl(u){u=(u||'').trim();if(!u)return '';try{const x=new URL(u);const p=x.searchParams.get('imgurl')||x.searchParams.get('mediaurl')||x.searchParams.get('url');if(p&&/^https?:/i.test(p)&&/google\.|bing\./.test(x.hostname))return p}catch(e){}return u}
+const coverSrc=i=>{const r=row(i.id);return r.customCover||r.cover||i.image||''};
+const q=i=>`${i.label} ${i.number} ${i.title} copertina`;
+const googleHD=i=>'https://www.google.com/search?tbm=isch&tbs=isz:l&q='+encodeURIComponent(q(i));
+const bingHD=i=>'https://www.bing.com/images/search?qft=+filterui:imagesize-large&q='+encodeURIComponent(q(i));
+function vintedQuery(i,broad){
+ if(i.vintedQuery)return broad?i.vintedQuery.split(' ').slice(0,3).join(' '):i.vintedQuery;
+ if(['PKNA','PK²','Pikappa'].includes(i.series)){const stem=i.series==='PK²'?'PK2':i.series;const n=i.kind==='special'?'Speciale '+i.year:i.number;return broad?`${stem} ${n}`:`${stem} ${n} ${i.title}`}
+ return broad?`PK ${i.number}`:`PK ${i.number} ${i.title} ${i.edition||''}`;
+}
+const vintedUrl=(i,b)=>'https://www.vinted.it/catalog?search_text='+encodeURIComponent(vintedQuery(i,b));
+const numLabel=i=>i.kind==='special'?'Speciale '+i.number:i.kind==='variant'?'Variant '+i.number.replace(/\s*V\d*$/,''):'#'+i.number;
+
+function cover(i,mode){
+ const src=coverSrc(i);const detail=mode==='detail';
+ const cols=+prefs.density||3;const cssW=detail?310:Math.max(110,(Math.min(innerWidth,1200)-36)/cols);
+ const url=src?enhancedUrl(src,cssW,detail?1.2:0.9):'';
+ const cors=detail&&url&&url!==src?' crossorigin="anonymous"':'';
+ return `<div class="cv"><div class="cv-fb"><b>PK</b><span>${esc(i.kind==='special'?'Speciale':'#'+i.number)}</span><em>${src?'':'Copertina da aggiungere'}</em></div>${src?`<img${cors} loading="${detail?'eager':'lazy'}" decoding="async" alt="" data-orig="${esc(src)}"${i.alt&&!row(i.id).customCover?` data-alt="${esc(i.alt.join('|'))}"`:''} src="${esc(url)}">`:''}</div>`;
+}
+function bindImages(root){
+ root.querySelectorAll('.cv img').forEach(img=>{
+  const ok=()=>img.classList.add('ok');
+  const fail=()=>{const o=img.dataset.orig;img.removeAttribute('crossorigin');
+   if(o&&img.getAttribute('src')!==o&&!img.dataset.tried){img.dataset.tried='1';img.addEventListener('error',fail,{once:true});img.addEventListener('load',ok,{once:true});img.src=o;return}
+   const alts=(img.dataset.alt||'').split('|').filter(Boolean);if(alts.length){const nx=alts.shift();img.dataset.alt=alts.join('|');img.dataset.orig=nx;img.addEventListener('error',fail,{once:true});img.addEventListener('load',ok,{once:true});img.src=nx;return}
+   img.remove()};
+  if(img.complete&&img.naturalWidth){ok();return}
+  if(img.complete&&!img.naturalWidth&&img.getAttribute('src')){fail();return}
+  img.addEventListener('load',ok,{once:true});img.addEventListener('error',fail,{once:true});
+ });
+}
+
+/* ---------- Sfondo tematico ---------- */
+const BGKEY='pk-vault-bg',BGPHOTO='pk-vault-bgphoto';
+let bgp={mode:'auto',id:'',strength:'media',blur:'si'};
+try{Object.assign(bgp,JSON.parse(localStorage.getItem(BGKEY)||'{}'))}catch(e){}
+const saveBg=()=>{try{localStorage.setItem(BGKEY,JSON.stringify(bgp))}catch(e){}};
+function bgSource(){
+ if(bgp.mode==='none')return {src:'',label:'Nessuno'};
+ if(bgp.mode==='url'&&bgp.url)return {src:bgp.url,label:'Immagine da link'};
+ if(bgp.mode==='photo'){let d='';try{d=localStorage.getItem(BGPHOTO)||''}catch(e){}if(d)return {src:d,label:'La tua foto'}}
+ let i=null;
+ if(bgp.mode==='pick'&&byId.get(bgp.id))i=byId.get(bgp.id);
+ if(!i){const own=catalog.filter(x=>row(x.id).owned&&coverSrc(x)).sort((a,b)=>(row(b.id).ownedAt||0)-(row(a.id).ownedAt||0));i=own[0]||byId.get('PKNA-0')}
+ const r=row(i.id);return {src:r.hdCover||coverSrc(i),label:`${i.label} ${i.number} · ${i.title}`};
+}
+function applyBg(){
+ const el=$('appbgImg'),{src}=bgSource();
+ document.documentElement.style.setProperty('--bgop',{leggera:.3,media:.5,forte:.78}[bgp.strength]||.5);
+ document.documentElement.style.setProperty('--bgblur',bgp.blur==='si'?'7px':'0px');
+ if(!src){el.removeAttribute('src');el.classList.remove('ok');return}
+ const url=src.startsWith('data:')?src:enhancedUrl(src,Math.min(innerWidth,900),0.6);
+ if(el.dataset.want===url)return;el.dataset.want=url;el.classList.remove('ok');
+ el.onload=()=>el.classList.add('ok');
+ el.onerror=()=>{if(url!==src&&el.getAttribute('src')!==src){el.src=src}else el.classList.remove('ok')};
+ el.src=url;
+}
+
+/* ---------- Logo personale ---------- */
+const LOGOKEY='pk-vault-logo';
+const getLogo=()=>{try{return localStorage.getItem(LOGOKEY)||''}catch(e){return ''}};
+function applyLogo(){
+ const src=getLogo(),hero=$('heroLogo'),mark=$('markImg');
+ if(src){
+  hero.onload=()=>{hero.hidden=false};hero.onerror=()=>{hero.hidden=true};hero.src=src;
+  mark.src=src;$('favicon').href=src;$('touchicon').href=src;
+ }else{hero.hidden=true;hero.removeAttribute('src')}
+}
+function setLogo(v){try{if(v)localStorage.setItem(LOGOKEY,v);else localStorage.removeItem(LOGOKEY)}catch(e){toast('Immagine troppo grande');return false}if(!v)location.reload();else applyLogo();return true}
+
+/* ---------- Elenco filtrato ---------- */
+function shown(){
+ const s=prefs.search.toLocaleLowerCase('it');
+ let arr=catalog.filter(i=>(prefs.series==='Tutte'||i.series===prefs.series)
+  &&(prefs.owned==='Tutti'||(prefs.owned==='Posseduti'?!!row(i.id).owned:!row(i.id).owned))
+  &&(prefs.type==='Tutti'||(prefs.type==='Speciali'?i.kind==='special':prefs.type==='Variant'?i.kind==='variant':i.kind==='regular'))
+  &&(prefs.cover!=='mancanti'||!coverSrc(i))
+  &&(!s||(i.label+' '+i.number+' '+i.title+' '+i.year+' '+i.series).toLocaleLowerCase('it').includes(s)));
+ if(prefs.sort==='serie'){const ix=new Map(SERIES.map((v,k)=>[v,k]));arr=arr.map((x,k)=>[x,k]).sort((a,b)=>(ix.get(a[0].series)-ix.get(b[0].series))||a[1]-b[1]).map(x=>x[0])}
+ if(prefs.sort==='titolo')arr.sort((a,b)=>a.title.localeCompare(b.title,'it'));
+ if(prefs.sort==='anno')arr.sort((a,b)=>a.year-b.year);
+ if(prefs.sort==='mancanti')arr.sort((a,b)=>Number(!!row(a.id).owned)-Number(!!row(b.id).owned));
+ if(prefs.sort==='posseduti')arr.sort((a,b)=>Number(!!row(b.id).owned)-Number(!!row(a.id).owned));
+ return arr;
+}
+const stats=name=>{const all=name==='Tutte'?catalog:catalog.filter(i=>i.series===name);return {total:all.length,owned:all.filter(i=>row(i.id).owned).length}};
+const filtersActive=()=>prefs.owned!=='Tutti'||prefs.type!=='Tutti'||prefs.sort!=='serie'||prefs.cover!=='tutte';
+const parseEuro=v=>{const n=parseFloat(String(v||'').replace(/[^\d,.-]/g,'').replace(/\.(?=\d{3}\b)/g,'').replace(',','.'));return isFinite(n)?n:0};
+
+/* ---------- Render ---------- */
+function renderStats(){
+ const n=catalog.filter(i=>row(i.id).owned).length;
+ $('ownedN').textContent=n;$('totalN').textContent=catalog.length;$('missingN').textContent=catalog.length-n;
+ $('pfill').style.width=(n/catalog.length*100).toFixed(1)+'%';$('pbar').setAttribute('aria-valuenow',Math.round(n/catalog.length*100));
+ const spent=Object.values(entries).reduce((a,r)=>a+(r&&r.owned?parseEuro(r.price):0),0);
+ $('spentWrap').hidden=!spent;$('spentN').textContent=spent.toLocaleString('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:spent%1?2:0});
+}
+function renderTabs(){
+ $('tabs').innerHTML=['Tutte',...SERIES].map(v=>{const st=stats(v);return `<button class="tab ${prefs.series===v?'sel':''} ${st.owned===st.total&&st.total?'done':''}" data-series="${esc(v)}">${esc(v)}<small>${st.owned}/${st.total}</small></button>`}).join('');
+}
+function cardHTML(i,showLabel){
+ const r=row(i.id),own=!!r.owned,ch=selected.has(i.id);
+ return `<article class="card ${own?'owned':''} ${ch?'chosen':''}" data-id="${esc(i.id)}" role="button" tabindex="0" aria-label="${esc(i.label)} ${esc(i.number)}, ${esc(i.title)}, ${own?'posseduto':'mancante'}"><div class="cv-holder" style="position:relative">${cover(i,'grid')}${own?`<span class="badge">${icon('check')}</span>`:''}${ch?`<span class="choose">${icon('check')}</span>`:''}${i.upcoming?'<span class="stripe up">In uscita</span>':i.kind==='variant'?'<span class="stripe v">Variant cover</span>':i.kind==='special'?'<span class="stripe sp">Special edition</span>':''}${i.custom?'<span class="mine" title="Aggiunto da te">+</span>':''}</div><div class="meta"><span class="num">${showLabel?esc(i.label)+' · ':''}${esc(i.kind==='regular'?'#'+i.number:i.number)}</span><span class="ttl">${esc(i.title)}</span></div></article>`;
+}
+function render(){
+ renderStats();renderTabs();savePrefs();
+ const items=shown(),grid=$('grid');
+ grid.dataset.cols=prefs.density;grid.style.setProperty('--cols',prefs.density);grid.classList.toggle('dim',prefs.dim==='si');
+ const grouped=prefs.series==='Tutte'&&prefs.sort==='serie'&&!prefs.search;
+ const showLabel=prefs.series==='Tutte'&&!grouped;
+ let last=null,html='';
+ for(const i of items){
+  if(grouped&&i.series!==last){last=i.series;const st=stats(i.series);html+=`<div class="ghead"><h2>${esc(i.series)}</h2><span><b>${st.owned}</b> / ${st.total}</span></div>`}
+  html+=cardHTML(i,showLabel);
+ }
+ grid.innerHTML=items.length?html:`<div class="empty"><h3>Nessun albo qui</h3><p>${prefs.search?'Nessun risultato per «'+esc(prefs.search)+'».':'Con questi filtri non resta nulla da mostrare.'}</p><button class="btn" id="resetEmpty">Mostra tutto</button></div>`;
+ if(!items.length)$('resetEmpty').onclick=resetFilters;
+ bindImages(grid);
+ $('resultsText').textContent=items.length+(items.length===1?' albo':' albi')+(prefs.series!=='Tutte'?' · '+prefs.series:'');
+ $('clearFilters').hidden=!(filtersActive()||prefs.search);$('filterDot').hidden=!filtersActive();
+ $('bulkBar').classList.toggle('open',selectMode);$('bulkCount').textContent=selected.size;$('bulkOwn').disabled=$('bulkMiss').disabled=!selected.size;
+}
+function resetFilters(){prefs={...prefs,owned:'Tutti',type:'Tutti',sort:'serie',cover:'tutte',search:''};$('search').value='';render()}
+
+/* ---------- Visore con swipe ---------- */
+let vList=[],vIndex=0,vBusy=false,vReturnId=null;
+const viewer=$('viewer'),track=$('vTrack'),panes=[...track.children];
+function paneHTML(i,active){
+ const r=row(i.id),own=!!r.owned;
+ const tag=i.kind==='variant'?'<span class="tag">Variant</span>':i.kind==='special'?'<span class="tag sp">Speciale</span>':'';
+ const tag2=(i.upcoming?'<span class="tag up">In uscita</span>':'')+(i.custom?'<span class="tag mine">Aggiunto da te</span>':'');
+ let h=`<div class="pane-in"><div class="p-chipwrap"><span class="v-chip"><i></i>${esc(i.label)} / COPERTINA</span></div><div class="p-cover ${own?'owned':''}" ${active?'id="pCover" role="button" tabindex="0" aria-label="Ingrandisci copertina"':''}>${cover(i,'detail')}<span class="p-zoomhint" aria-hidden="true">${icon('expand')}</span></div>
+ <div class="p-head"><div class="p-over">${esc(i.label)} · ${esc(i.kind==='regular'?'N° '+i.number:i.number)} ${tag}${tag2}</div><h2 class="p-title">${esc(i.title)}</h2><div class="p-sub">${i.year} · ${esc(i.edition||'Prima stampa originale')}</div></div>`;
+ if(active){
+  h+=`<div class="box"><h3>La mia copia</h3><div class="fields">
+   <label class="field"><span>Condizioni</span><select id="fCondition"><option value="">—</option>${['Nuovo / sigillato','Come nuovo','Ottime','Buone','Discrete','Da sistemare'].map(t=>`<option ${r.condition===t?'selected':''}>${esc(t)}</option>`).join('')}</select></label>
+   <label class="field"><span>Prezzo pagato</span><input id="fPrice" inputmode="decimal" placeholder="€ 0,00" value="${esc(r.price||'')}"></label>
+   <label class="field"><span>Data acquisto</span><input id="fDate" type="date" value="${esc(r.date||'')}"></label>
+   <label class="field"><span>Dove</span><input id="fStore" placeholder="Vinted, fiera…" value="${esc(r.store||'')}"></label>
+   <label class="field wide"><span>Note</span><textarea id="fNotes" placeholder="Difetti, provenienza, dedica…">${esc(r.notes||'')}</textarea></label></div></div>
+  <details class="box" id="coverBox"><summary>Copertina migliore ${icon('chev-r')}</summary>
+   <p class="note" style="margin-top:0">Cerca una scansione grande, tieni premuto sull’immagine → «Copia indirizzo immagine», poi tocca «Incolla link».</p>
+   <div class="links"><a href="${esc(googleHD(i))}" target="_blank" rel="noopener noreferrer">${icon('search')}Google · grandi</a><a href="${esc(bingHD(i))}" target="_blank" rel="noopener noreferrer">${icon('search')}Bing · grandi</a></div>
+   <div class="fields" style="margin-top:12px"><label class="field wide"><span>Link immagine HD (usata nello zoom)</span><input id="fHD" type="url" placeholder="https://…" value="${esc(r.hdCover||'')}"></label></div>
+   <div class="row"><button class="btn sm" id="pasteHD">${icon('clip')}Incolla link</button><button class="btn sm mint" id="saveHD">Salva HD</button></div>
+   <div class="fields" style="margin-top:14px"><label class="field wide"><span>Sostituisci la copertina in griglia (URL)</span><input id="fImg" type="url" placeholder="https://…" value="${esc(r.customCover?.startsWith('data:')?'':(r.customCover||''))}"></label></div>
+   <div class="row"><button class="btn sm" id="saveImg">${icon('image')}Usa link</button><label class="btn sm filebtn">${icon('upload')}Foto<input type="file" accept="image/*" id="upImg"></label>${r.customCover||r.hdCover?`<button class="btn sm ghost" id="resetImg">Ripristina</button>`:''}</div>
+  </details>
+  <div class="links"><a href="${esc(vintedUrl(i,true))}" target="_blank" rel="noopener noreferrer">${icon('bag')}Più risultati Vinted</a><a href="${esc(i.source)}" target="_blank" rel="noopener noreferrer">${icon('external')}Scheda originale</a><button type="button" id="useBg" style="grid-column:1/-1">${icon('image')}Usa questa copertina come sfondo</button>${i.custom?`<button type="button" id="delCustom" style="grid-column:1/-1;color:var(--rose)">${icon('close')}Elimina questo albo aggiunto</button>`:''}</div>`;
+ }
+ return h+'</div>';
+}
+function setAmbient(img){
+ try{const c=document.createElement('canvas');c.width=12;c.height=16;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,12,16);const d=x.getImageData(0,0,12,16).data;let r=0,g=0,b=0,w=0;
+  for(let k=0;k<d.length;k+=4){const mx=Math.max(d[k],d[k+1],d[k+2]),mn=Math.min(d[k],d[k+1],d[k+2]);const wt=1+(mx-mn)/40;r+=d[k]*wt;g+=d[k+1]*wt;b+=d[k+2]*wt;w+=wt}
+  r/=w;g/=w;b/=w;const L=Math.max(r,g,b)||1;const k2=Math.min(1.6,190/L);viewer.style.setProperty('--amb',`${Math.round(r*k2)} ${Math.round(g*k2)} ${Math.round(b*k2)}`)}catch(e){viewer.style.setProperty('--amb','122 92 255')}
+}
+function renderPanes(){
+ const cur=vList[vIndex],prev=vList[vIndex-1],next=vList[vIndex+1];
+ panes[0].innerHTML=prev?paneHTML(prev,false):'';panes[2].innerHTML=next?paneHTML(next,false):'';panes[1].innerHTML=paneHTML(cur,true);
+ panes.forEach(p=>{p.scrollTop=0;bindImages(p)});
+ track.classList.remove('anim');track.style.transform='translateX(-33.3333%)';
+ $('vPos').textContent=`${vIndex+1} di ${vList.length}`;$('vPrev').disabled=!prev;$('vNext').disabled=!next;
+ viewer.style.setProperty('--amb','122 92 255');
+ const img=panes[1].querySelector('.cv img');
+ if(img&&img.hasAttribute('crossorigin')){if(img.complete&&img.naturalWidth)setAmbient(img);else img.addEventListener('load',()=>{if(img.hasAttribute('crossorigin'))setAmbient(img)},{once:true})}
+ updateOwnBtn();bindActive(cur);
+}
+function updateOwnBtn(){
+ const i=vList[vIndex],own=!!row(i.id).owned,b=$('vOwn');
+ b.className='btn own '+(own?'mint':'amber');b.innerHTML=own?icon('check')+'Nella collezione':icon('plus')+'Ce l’ho';
+ b.setAttribute('aria-pressed',String(own));$('vVinted').href=vintedUrl(i);
+}
+function bindActive(i){
+ const id=i.id,save=(k,v)=>{entries[id]={...row(id),[k]:v};persist()};
+ $('pCover').onclick=()=>openZoom(id);$('pCover').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openZoom(id)}};
+ $('fCondition').onchange=e=>save('condition',e.target.value);
+ $('fPrice').oninput=e=>{save('price',e.target.value);renderStats()};
+ $('fDate').onchange=e=>save('date',e.target.value);
+ $('fStore').oninput=e=>save('store',e.target.value);
+ $('fNotes').oninput=e=>save('notes',e.target.value);
+ const keepOpen=()=>{renderPanes();const d=$('coverBox');if(d)d.open=true};
+ $('pasteHD').onclick=async()=>{try{const t=cleanImageUrl(await navigator.clipboard.readText());if(!/^https?:/i.test(t)){toast('Negli appunti non c’è un link immagine');return}$('fHD').value=t;$('saveHD').click()}catch(e){toast('Incolla il link nel campo');$('fHD').focus()}};
+ $('saveHD').onclick=()=>{const u=cleanImageUrl($('fHD').value);if(u&&!/^https?:\/\//i.test(u)){toast('Serve un link che inizi con https://');return}save('hdCover',u);keepOpen();toast(u?'Immagine HD salvata':'Link HD rimosso')};
+ $('saveImg').onclick=()=>{const u=cleanImageUrl($('fImg').value);if(u&&!/^https?:\/\//i.test(u)){toast('Serve un link che inizi con https://');return}entries[id]={...row(id),customCover:u,cover:''};persist();render();keepOpen();toast('Copertina aggiornata')};
+ $('upImg').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{entries[id]={...row(id),customCover:await resized(f),cover:''};persist();render();keepOpen();toast('Foto salvata')}catch(x){toast('Non riesco a leggere la foto')}};
+ const dc=$('delCustom');if(dc)dc.onclick=()=>{if(!confirm('Eliminare questo albo dalla tua lista?'))return;customItems=customItems.filter(x=>x.id!==id);saveCustom();const k=catalog.findIndex(x=>x.id===id);if(k>=0)catalog.splice(k,1);byId.delete(id);delete entries[id];persist();refreshSeries();backLayer();render();toast('Albo eliminato')};
+ $('useBg').onclick=()=>{bgp={...bgp,mode:'pick',id};saveBg();applyBg();toast('Sfondo impostato: chiudi la scheda per vederlo')};
+ const rs=$('resetImg');if(rs)rs.onclick=()=>{entries[id]={...row(id),customCover:'',cover:'',hdCover:''};persist();render();keepOpen();toast('Copertina originale ripristinata')};
+}
+function openViewer(id){
+ vList=shown();vIndex=vList.findIndex(x=>x.id===id);if(vIndex<0){vList=[byId.get(id)];vIndex=0}
+ vReturnId=id;renderPanes();viewer.hidden=false;document.body.classList.add('locked');
+ requestAnimationFrame(()=>requestAnimationFrame(()=>viewer.classList.add('open')));
+ pushLayer(closeViewerNow);$('vBack').focus({preventScroll:true});
+ try{if(!localStorage.getItem('pk-vault-swipehint')&&vList.length>1){localStorage.setItem('pk-vault-swipehint','1');const h=document.createElement('div');h.className='swipehint';h.textContent='Scorri per cambiare albo';$('vViewport').appendChild(h);setTimeout(()=>h.remove(),2700)}}catch(e){}
+}
+function closeViewerNow(){
+ viewer.classList.remove('open');document.body.classList.remove('locked');
+ setTimeout(()=>{if(!viewer.classList.contains('open'))viewer.hidden=true},260);
+ const id=vList[vIndex]?.id;const card=id&&$('grid').querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+ if(card){const r=card.getBoundingClientRect();if(r.top<80||r.bottom>innerHeight)card.scrollIntoView({block:'center'});card.focus({preventScroll:true})}
+}
+function go(dir){
+ if(vBusy)return;if(dir===1&&vIndex>=vList.length-1)dir=0;if(dir===-1&&vIndex<=0)dir=0;
+ vBusy=true;track.classList.add('anim');track.style.transform=`translateX(${dir===1?'-66.6667%':dir===-1?'0%':'-33.3333%'})`;
+ let done=false;const end=()=>{if(done)return;done=true;vBusy=false;track.classList.remove('anim');if(dir){vIndex+=dir;renderPanes();buzz(8)}};
+ track.addEventListener('transitionend',end,{once:true});setTimeout(end,420);
+}
+(function swipe(){
+ let d=null,suppress=false;
+ track.addEventListener('pointerdown',e=>{if(vBusy||(e.pointerType==='mouse'&&e.button!==0))return;if(e.target.closest('input,textarea,select,summary'))return;d={id:e.pointerId,x:e.clientX,y:e.clientY,mode:null,dx:0,lx:e.clientX,lt:performance.now(),v:0}});
+ track.addEventListener('pointermove',e=>{
+  if(!d||e.pointerId!==d.id)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;
+  if(!d.mode){if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)*1.25){d.mode='h';try{track.setPointerCapture(e.pointerId)}catch(_){}}else if(Math.abs(dy)>10){d=null;return}else return}
+  const now=performance.now();d.v=(e.clientX-d.lx)/Math.max(1,now-d.lt);d.lx=e.clientX;d.lt=now;
+  let m=dx;if((m>0&&vIndex===0)||(m<0&&vIndex===vList.length-1))m*=.28;d.dx=m;
+  track.style.transform=`translateX(calc(-33.3333% + ${m}px))`;
+ });
+ const up=e=>{if(!d||e.pointerId!==d.id)return;if(d.mode==='h'){suppress=true;setTimeout(()=>suppress=false,350);const w=track.clientWidth/3;let dir=0;if(d.dx<-w*.2||d.v<-.45)dir=1;else if(d.dx>w*.2||d.v>.45)dir=-1;go(dir)}d=null};
+ track.addEventListener('pointerup',up);track.addEventListener('pointercancel',e=>{if(d&&d.mode==='h')go(0);d=null});
+ track.addEventListener('click',e=>{if(suppress){e.stopPropagation();e.preventDefault();suppress=false}},true);
+})();
+$('vBack').onclick=backLayer;$('vPrev').onclick=()=>go(-1);$('vNext').onclick=()=>go(1);$('vZoom').onclick=()=>openZoom(vList[vIndex].id);
+$('vOwn').onclick=()=>{
+ const id=vList[vIndex].id,own=!row(id).owned;entries[id]={...row(id),owned:own,...(own?{ownedAt:Date.now()}:{})};persist();buzz(own?[10,40,14]:10);
+ updateOwnBtn();const pc=$('pCover');pc.classList.toggle('owned',own);pc.classList.remove('pop');void pc.offsetWidth;if(own)pc.classList.add('pop');
+ render();if(bgp.mode==='auto')applyBg();toast(own?'Aggiunto alla collezione':'Segnato come mancante');
+};
+
+/* ---------- Zoom ---------- */
+function openZoom(id){
+ if($('lightbox'))return;const i=byId.get(id),r=row(id);
+ const src=r.hdCover||coverSrc(i);
+ const lb=document.createElement('div');lb.id='lightbox';lb.className='lightbox';lb.setAttribute('role','dialog');lb.setAttribute('aria-modal','true');lb.setAttribute('aria-label','Copertina ingrandita');
+ lb.innerHTML=`<button class="lb-close" aria-label="Chiudi">${icon('close')}</button><div class="lb-frame" id="lbFrame"><img class="lb-img" alt="Copertina di ${esc(i.title)}" draggable="false"><div class="lb-fb">Copertina non disponibile</div></div><div class="lb-report" id="lbReport">Caricamento…</div><div class="lb-row"><button class="btn sm" id="lbCmp" hidden>Mostra originale</button><a class="btn sm ghost" href="${esc(googleHD(i))}" target="_blank" rel="noopener noreferrer">Cerca versione HD</a></div>`;
+ document.body.appendChild(lb);
+ const frame=lb.querySelector('#lbFrame'),img=lb.querySelector('.lb-img'),rep=lb.querySelector('#lbReport'),cmp=lb.querySelector('#lbCmp');
+ let closed=false,oW=0,oH=0,enh='',showEnh=false;
+ const fit=()=>{const w=img.naturalWidth,h=img.naturalHeight;if(!w||!h)return;const ra=w/h;if(ra>.3&&ra<1.8){frame.style.aspectRatio=String(ra);frame.style.width=`min(94vw, 680px, ${Math.round(74*ra)}dvh)`}img.classList.add('ok')};
+ const describe=()=>{if(closed)return;const base=`Originale ${oW} × ${oH} px`;if(showEnh){rep.textContent=`${base} · migliorata a ${img.naturalWidth} px`;rep.classList.toggle('low',oW<450)}else{rep.textContent=`${base} · qualità ${oW>=950?'buona':oW>=650?'discreta':'bassa'}`;rep.classList.toggle('low',oW<650)}};
+ img.addEventListener('load',()=>{oW=img.naturalWidth;oH=img.naturalHeight;fit();describe();
+  const target=Math.min(1800,Math.round(Math.min(innerWidth*.94,680)*DPR));
+  if(enhanceOn&&oW&&oW<target*.85&&/^https?:/i.test(src)){enh=enhancedUrl(src,target/DPR,Math.min(2.2,.8+target/oW*.35).toFixed(2));rep.textContent=`Originale ${oW} × ${oH} px · miglioramento in corso…`;const pre=new Image();pre.onload=()=>{if(closed||pre.naturalWidth<=oW){describe();return}img.onload=describe;img.src=enh;showEnh=true;cmp.hidden=false};pre.onerror=describe;pre.src=enh}
+ },{once:true});
+ img.addEventListener('error',()=>{img.style.display='none';lb.querySelector('.lb-fb').style.display='block';rep.textContent='Immagine non disponibile: cercane una in HD.'},{once:true});
+ cmp.onclick=()=>{showEnh=!showEnh;img.onload=describe;img.src=showEnh?enh:src;cmp.textContent=showEnh?'Mostra originale':'Mostra migliorata'};
+ if(src)img.src=src;else{img.style.display='none';lb.querySelector('.lb-fb').style.display='block';rep.textContent='Copertina non disponibile'}
+ let g=null,raf=0,rx=0,ry=0;const paint=()=>{raf=0;img.style.setProperty('--rx',rx.toFixed(2)+'deg');img.style.setProperty('--ry',ry.toFixed(2)+'deg')};const sch=()=>{if(!raf)raf=requestAnimationFrame(paint)};
+ const reset=()=>{g=null;frame.classList.remove('dragging');rx=ry=0;sch()};
+ frame.addEventListener('pointerdown',e=>{g={id:e.pointerId,x:e.clientX,y:e.clientY};try{frame.setPointerCapture(e.pointerId)}catch(_){}});
+ frame.addEventListener('pointermove',e=>{if(!g||e.pointerId!==g.id)return;frame.classList.add('dragging');ry=Math.max(-14,Math.min(14,(e.clientX-g.x)*.11));rx=Math.max(-9,Math.min(9,-(e.clientY-g.y)*.08));sch()});
+ frame.addEventListener('pointerup',reset);frame.addEventListener('pointercancel',reset);frame.addEventListener('contextmenu',e=>e.preventDefault());
+ const closeNow=()=>{closed=true;if(raf)cancelAnimationFrame(raf);lb.remove();$('pCover')?.focus({preventScroll:true})};
+ lb.querySelector('.lb-close').onclick=backLayer;lb.addEventListener('click',e=>{if(e.target===lb)backLayer()});
+ pushLayer(closeNow);lb.querySelector('.lb-close').focus();
+}
+
+/* ---------- Fogli ---------- */
+function openSheet(html){const was=$('overlay').classList.contains('open');$('sheetBody').innerHTML=html;$('overlay').classList.add('open');document.body.classList.add('locked');if(!was){$('sheet').scrollTop=0;pushLayer(closeSheetNow)}}
+function closeSheetNow(){$('overlay').classList.remove('open');if(!viewer.classList.contains('open'))document.body.classList.remove('locked')}
+const head=t=>`<div class="sh-head"><h2>${t}</h2><button class="iconbtn" data-close aria-label="Chiudi">${icon('close')}</button></div>`;
+const bgSeg=(key,opts)=>`<div class="seg">${opts.map(([v,t])=>`<button class="chip ${bgp[key]===v?'sel':''}" data-bg="${key}" data-value="${esc(v)}">${esc(t)}</button>`).join('')}</div>`;
+const seg=(key,opts)=>`<div class="seg">${opts.map(([v,t])=>`<button class="chip ${prefs[key]===v?'sel':''}" data-pref="${key}" data-value="${esc(v)}">${esc(t)}</button>`).join('')}</div>`;
+function filterSheet(){
+ openSheet(head('Filtri e vista')+
+ `<div class="grouplabel">Mostra</div>${seg('owned',[['Tutti','Tutti'],['Posseduti','Posseduti'],['Mancanti','Mancanti']])}
+  <div class="grouplabel">Tipo</div>${seg('type',[['Tutti','Tutti'],['Regolari','Regolari'],['Speciali','Speciali'],['Variant','Variant']])}
+  <div class="grouplabel">Ordine</div>${seg('sort',[['serie','Serie e numero'],['anno','Anno'],['titolo','Titolo A–Z'],['mancanti','Mancanti prima'],['posseduti','Posseduti prima']])}
+  <div class="grouplabel">Copertine per riga</div>${seg('density',[['2','Grandi'],['3','Medie'],['4','Piccole']])}
+  <div class="grouplabel">Copertine</div>${seg('cover',[['tutte','Tutte'],['mancanti',`Senza immagine (${catalog.filter(i=>!coverSrc(i)).length})`]])}
+  <div class="grouplabel">Albi mancanti</div>${seg('dim',[['no','Normali'],['si','Attenuati']])}
+  <div class="row" style="margin-top:26px"><button class="btn ghost" id="fReset">Azzera</button><button class="btn amber" style="flex:2" data-close id="fApply"></button></div>`);
+ const sync=()=>{$('sheetBody').querySelectorAll('[data-pref]').forEach(b=>b.classList.toggle('sel',prefs[b.dataset.pref]===b.dataset.value));$('fApply').textContent=`Mostra ${shown().length} albi`};
+ $('sheetBody').querySelectorAll('[data-pref]').forEach(b=>b.onclick=()=>{prefs[b.dataset.pref]=b.dataset.value;render();sync()});
+ $('fReset').onclick=()=>{prefs={...prefs,owned:'Tutti',type:'Tutti',sort:'serie',density:'3',dim:'no',cover:'tutte'};render();sync()};sync();
+}
+function settingsSheet(){
+ openSheet(head('Backup e impostazioni')+
+ `<p class="note" style="margin-top:0">La collezione è salvata solo su questo dispositivo. Esporta un backup ogni tanto, soprattutto prima di cancellare i dati del browser.</p>
+  <div class="row" style="margin-top:4px"><button class="btn mint" id="sNews">${icon('list')}Novità PK</button><button class="btn" id="sAdd">${icon('plus')}Aggiungi albo</button></div>
+  <hr class="sep"><div class="grouplabel">Backup</div>
+  <div class="stack" style="margin-top:6px"><button class="btn amber full" id="sBackup">${icon('download')}Esporta backup (.json)</button><button class="btn full" id="sImport">${icon('upload')}Importa backup</button><button class="btn full" id="sCsv">${icon('list')}Esporta lista CSV</button><button class="btn full" id="sHtml">${icon('download')}Salva l’app con i miei dati (.html)</button></div>
+  <hr class="sep"><div class="grouplabel">Logo</div>
+  <div class="logoprev" id="logoPrev"></div>
+  <div class="inline-url"><input id="logoUrl" type="url" placeholder="Link del logo (png o svg)" value="${esc(getLogo().startsWith('data:')?'':getLogo())}"><button class="btn sm mint" id="logoSave">Usa</button></div>
+  <div class="row"><button class="btn sm" id="logoPaste">${icon('clip')}Incolla link</button><label class="btn sm filebtn">${icon('upload')}Carica immagine<input type="file" accept="image/*" id="logoUp"></label>${getLogo()?'<button class="btn sm ghost" id="logoDel">Rimuovi</button>':''}</div>
+  <p class="note">Cerca su Google Immagini «logo PKNA png», tieni premuto sul logo → «Copia indirizzo immagine» e tocca «Incolla link». Oppure carica uno screenshot ritagliato. Compare in testata, in grande sopra il titolo e come icona dell’app.</p>
+  <hr class="sep"><div class="grouplabel">Sfondo della collezione</div>
+  <div class="bgprev" id="bgPrev"></div>
+  <div class="grouplabel" style="margin-top:14px">Immagine</div>${bgSeg('mode',[['auto','Ultimo albo preso'],['pick','Albo scelto'],['url','Link immagine'],['photo','Foto mia'],['none','Nessuno']])}
+  <div class="inline-url"><input id="bgUrl" type="url" placeholder="Incolla il link di un’immagine" value="${esc(bgp.url||'')}"><button class="btn sm mint" id="bgUrlSave">Usa</button></div>
+  <div class="grouplabel">Intensità</div>${bgSeg('strength',[['leggera','Leggera'],['media','Media'],['forte','Forte']])}
+  <div class="grouplabel">Effetto</div>${bgSeg('blur',[['si','Sfumato'],['no','Nitido']])}
+  <div class="row"><label class="btn sm filebtn">${icon('upload')}Carica una foto<input type="file" accept="image/*" id="bgUpload"></label></div>
+  <p class="note">«Albo scelto»: apri un albo e tocca «Usa questa copertina come sfondo». La foto resta solo su questo dispositivo.</p>
+  <hr class="sep"><div class="grouplabel">Qualità copertine</div>
+  <button class="btn full ${enhanceOn?'mint':''}" id="sEnh">${enhanceOn?icon('check')+'Miglioramento automatico attivo':'Miglioramento automatico spento'}</button>
+  <p class="note">Ingrandisce le miniature e ne aumenta la nitidezza tramite wsrv.nl. Le linee risultano più pulite, ma i dettagli mancanti non si possono ricreare: per una copertina davvero nitida salva un link HD dalla scheda dell’albo.</p>
+  <hr class="sep"><div class="grouplabel">Selezione multipla</div><button class="btn full" id="sSel">Seleziona più albi</button><p class="note">Oppure tieni premuta una copertina nella griglia.</p>
+  <hr class="sep"><p class="note">Catalogo di sole prime edizioni con storie inedite: PKNA, PK², Pikappa, Universo PK e Macchina del Fangus (Paperinik Appgrade), PK su Topolino, Fuoriserie, PKEDA con variant, PK Tube, Untold Tales e le uscite del trentennale. Le storie a puntate su Topolino sono elencate per fascicolo. In «Extra» trovi rarità e materiale inedito sparso: tavole di Disney MEGAzine, la parodia su Ridi Topolino, l’albetto del videogioco, i volumi di ristampa che contengono inediti e le storie olandesi pubblicate in Italia. Escluse le ristampe pure (Deluxe, Super Deluxe, Giant, Omnibus). Verificato a novembre 2026 su PK Hack, Papersera e Wikipedia.</p>`);
+ const prevBg=()=>{const {src,label}=bgSource();$('bgPrev').innerHTML=src?`<img alt="" src="${esc(src.startsWith('data:')?src:enhancedUrl(src,560,.6))}" onerror="this.src='${esc(src.startsWith('data:')?'':src)}'"><span>${esc(label)}</span>`:`<span>${esc(label)}</span>`};prevBg();
+ $('sheetBody').querySelectorAll('[data-bg]').forEach(b=>b.onclick=()=>{const k=b.dataset.bg,v=b.dataset.value;if(k==='mode'&&v==='photo'){let has='';try{has=localStorage.getItem(BGPHOTO)||''}catch(e){}if(!has){$('bgUpload').click();return}}if(k==='mode'&&v==='url'&&!bgp.url){$('bgUrl').focus();toast('Incolla il link e tocca «Usa»');return}if(k==='mode'&&v==='pick'&&!byId.get(bgp.id)){toast('Apri un albo e tocca «Usa come sfondo»');return}bgp[k]=v;saveBg();applyBg();$('sheetBody').querySelectorAll(`[data-bg="${k}"]`).forEach(x=>x.classList.toggle('sel',x.dataset.value===bgp[k]));prevBg()});
+ $('bgUpload').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const d=await resized(f,1400,.82);localStorage.setItem(BGPHOTO,d);bgp.mode='photo';saveBg();applyBg();settingsSheet();toast('Foto impostata come sfondo')}catch(x){toast('Foto troppo grande o non leggibile')}};
+ const lp=()=>{const l=getLogo();$('logoPrev').innerHTML=l?`<img alt="Logo" src="${esc(l)}">`:'<span>Nessun logo personale</span>'};lp();
+ const useLogo=u=>{u=cleanImageUrl(u);if(!/^https?:\/\//i.test(u)){toast('Serve un link che inizi con https://');return}const t=new Image();t.onload=()=>{if(setLogo(u)){settingsSheet();toast('Logo aggiornato')}};t.onerror=()=>toast('Il link non porta a un’immagine');t.src=u};
+ $('logoSave').onclick=()=>useLogo($('logoUrl').value);
+ $('logoPaste').onclick=async()=>{try{const t=await navigator.clipboard.readText();$('logoUrl').value=cleanImageUrl(t);useLogo(t)}catch(e){toast('Incolla il link nel campo');$('logoUrl').focus()}};
+ $('logoUp').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const d=f.type==='image/svg+xml'?await new Promise((y,n)=>{const r=new FileReader;r.onload=()=>y(r.result);r.onerror=n;r.readAsDataURL(f)}):await resizedPng(f,900);if(setLogo(d)){settingsSheet();toast('Logo aggiornato')}}catch(x){toast('Immagine non leggibile')}};
+ const ld=$('logoDel');if(ld)ld.onclick=()=>setLogo('');
+ $('bgUrlSave').onclick=()=>{const u=cleanImageUrl($('bgUrl').value);if(!/^https?:\/\//i.test(u)){toast('Serve un link che inizi con https://');return}bgp={...bgp,mode:'url',url:u};saveBg();delete $('appbgImg').dataset.want;applyBg();settingsSheet();toast('Sfondo aggiornato')};
+ $('sNews').onclick=newsSheet;$('sAdd').onclick=()=>addSheet();
+ $('sBackup').onclick=downloadBackup;$('sImport').onclick=()=>$('importFile').click();$('sCsv').onclick=downloadCSV;$('sHtml').onclick=downloadHTML;
+ $('sEnh').onclick=()=>{enhanceOn=!enhanceOn;try{localStorage.setItem(ENHKEY,enhanceOn?'on':'off')}catch(e){}delete $('appbgImg').dataset.want;applyBg();render();settingsSheet();toast(enhanceOn?'Miglioramento attivo':'Copertine originali')};
+ $('sSel').onclick=()=>{backLayer();selectMode=true;selected.clear();render();toast('Tocca gli albi da selezionare')};
+}
+$('overlay').addEventListener('click',e=>{if(e.target===$('overlay')||e.target.closest('[data-close]'))backLayer()});
+
+/* ---------- Novità dal mondo PK ---------- */
+const NEWSKEY='pk-vault-news-seen';
+const NEWS_SOURCES=[
+ {name:'PK Hack',filter:null,urls:['https://pkhack.altervista.org/wp-json/wp/v2/posts?per_page=10&_fields=date,link,title','https://pkhack.altervista.org/?rest_route=/wp/v2/posts&per_page=10&_fields=date,link,title','https://pkhack.altervista.org/wp/wp-json/wp/v2/posts?per_page=10&_fields=date,link,title']},
+ {name:'Papersera',filter:/\bPK\b|PKNA|Pikappa|PKEDA|Paperinik/i,urls:['https://www.papersera.net/wp/wp-json/wp/v2/posts?search=PK&per_page=15&_fields=date,link,title','https://www.papersera.net/wp/?rest_route=/wp/v2/posts&search=PK&per_page=15&_fields=date,link,title']}
+];
+const decodeHtml=h=>{const t=document.createElement('textarea');t.innerHTML=h;return t.value};
+async function getJSON(u,ms=8000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(u,{signal:c.signal,headers:{Accept:'application/json'}});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}}
+async function fetchNews(){
+ const out=[],failed=[];
+ await Promise.all(NEWS_SOURCES.map(async src=>{
+  for(const u of src.urls){try{const j=await getJSON(u);if(!Array.isArray(j))continue;for(const p of j){const title=decodeHtml(p.title?.rendered||'');if(src.filter&&!src.filter.test(title))continue;out.push({src:src.name,title,link:p.link,date:p.date})}return}catch(e){}}
+  failed.push(src.name);
+ }));
+ out.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ return {items:out,failed};
+}
+async function newsSheet(){
+ openSheet(head('Novità PK')+`<p class="note" style="margin-top:0">Ultimi articoli di PK Hack e Papersera, i due siti che seguono più da vicino le uscite di PK.</p>${candidatesHTML()}<div class="grouplabel">Ultimi articoli</div><div class="newsbox" id="newsList"><div class="loader">Controllo le novità…</div></div>
+  <div class="grouplabel">Fonti da consultare</div><div class="links" style="margin-top:0"><a href="https://pkhack.altervista.org/pk-whats-next/" target="_blank" rel="noopener noreferrer">${icon('external')}PK Hack · What’s Next</a><a href="https://pkhack.altervista.org/in-edicola/" target="_blank" rel="noopener noreferrer">${icon('external')}PK Hack · In edicola</a><a href="https://www.papersera.net/wp/" target="_blank" rel="noopener noreferrer">${icon('external')}Papersera</a><a href="https://www.panini.it/shp_ita_it/catalogsearch/result/?q=PK" target="_blank" rel="noopener noreferrer">${icon('external')}Panini · cerca PK</a></div>
+  <div class="row" style="margin-top:18px"><button class="btn amber" style="flex:1" id="newsAdd">${icon('plus')}Aggiungi un albo uscito</button></div>`);
+ $('newsAdd').onclick=()=>addSheet();bindCandidates();
+ let seen='';try{seen=localStorage.getItem(NEWSKEY)||''}catch(e){}
+ let items=[],failed=[];
+ if(remote&&Array.isArray(remote.news)&&remote.news.length){items=remote.news.map(n=>({src:n.src||'',title:n.title,link:n.link,date:n.date}))}else{({items,failed}=await fetchNews())}
+ const box=$('newsList');if(!box)return;
+ if(!items.length){box.innerHTML=`<div class="loader">Non riesco a leggere i siti da qui${failed.length?' ('+esc(failed.join(', '))+')':''}. Apri le fonti qui sotto: funziona meglio quando l’app è pubblicata su un sito vero (https).</div>`;return}
+ box.innerHTML=items.slice(0,14).map(n=>`<a class="newsitem" href="${esc(n.link)}" target="_blank" rel="noopener noreferrer"><b>${esc(n.title)}</b><small>${seen&&n.date>seen?'<em>Nuovo</em>':''}${esc(n.src)} · ${new Date(n.date).toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'})}</small></a>`).join('');
+ try{localStorage.setItem(NEWSKEY,items[0].date)}catch(e){}$('menuDot').hidden=true;
+}
+async function backgroundNewsCheck(){
+ try{const last=+localStorage.getItem('pk-vault-news-checked')||0;if(Date.now()-last<6*3600e3){const pend=localStorage.getItem('pk-vault-news-pending');if(pend&&pend>(localStorage.getItem(NEWSKEY)||''))$('menuDot').hidden=false;return}
+  const {items}=await fetchNews();localStorage.setItem('pk-vault-news-checked',String(Date.now()));if(!items.length)return;
+  const seen=localStorage.getItem(NEWSKEY)||'';localStorage.setItem('pk-vault-news-pending',items[0].date);
+  if(!seen){localStorage.setItem(NEWSKEY,items[0].date);return}
+  if(items[0].date>seen)$('menuDot').hidden=false;
+ }catch(e){}
+}
+
+/* ---------- Novità automatiche: upcoming.json pubblicato accanto all'app ---------- */
+const IGNKEY='pk-vault-ignored';
+let remote=null;
+const ignored=()=>{try{return JSON.parse(localStorage.getItem(IGNKEY)||'[]')}catch(e){return []}};
+const norm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+function candidates(){
+ if(!remote||!Array.isArray(remote.items))return [];
+ const ign=new Set(ignored()),known=new Set(catalog.map(i=>norm(i.title)+'|'+norm(i.number)));
+ return remote.items.filter(c=>c&&c.id&&c.title&&!ign.has(c.id)&&!byId.has(c.id)&&!known.has(norm(c.title)+'|'+norm(c.number)));
+}
+async function loadRemote(){
+ if(!/^https?:/.test(location.protocol))return;
+ try{const r=await fetch('upcoming.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();if(j&&typeof j==='object'){remote=j;if(candidates().length)$('menuDot').hidden=false}}catch(e){}
+}
+function candidatesHTML(){
+ const c=candidates();if(!c.length)return '';
+ return `<div class="grouplabel">Trovate in automatico <span style="color:var(--mint)">${c.length}</span></div><div class="newsbox">${c.slice(0,20).map(x=>`<div class="newsitem" style="display:flex;gap:12px;align-items:center">${x.image?`<img src="${esc(x.image)}" alt="" style="width:46px;height:64px;object-fit:cover;border-radius:6px;flex-shrink:0;background:var(--surface2)" onerror="this.style.visibility='hidden'">`:''}<div style="flex:1;min-width:0"><b>${esc(x.title)}</b><small>${esc(x.where||x.series||'')}${x.date?' · '+esc(x.date):''}${x.upcoming?' · <em>In uscita</em>':''}</small><div class="row" style="margin-top:8px"><button class="btn sm mint" data-cadd="${esc(x.id)}">Aggiungi</button><button class="btn sm ghost" data-cign="${esc(x.id)}">Ignora</button>${x.source?`<a class="btn sm ghost" href="${esc(x.source)}" target="_blank" rel="noopener noreferrer">Apri</a>`:''}</div></div></div>`).join('')}</div>`;
+}
+function bindCandidates(){
+ $('sheetBody').querySelectorAll('[data-cadd]').forEach(b=>b.onclick=()=>{const x=candidates().find(c=>c.id===b.dataset.cadd);if(x)addSheet({...x,remoteId:x.id})});
+ $('sheetBody').querySelectorAll('[data-cign]').forEach(b=>b.onclick=()=>{const l=ignored();l.push(b.dataset.cign);try{localStorage.setItem(IGNKEY,JSON.stringify(l))}catch(e){}const card=b.closest('.newsitem');card?.remove();toast('Ignorata')});
+}
+
+/* ---------- Aggiungi un albo ---------- */
+function addSheet(pre={}){
+ const opts=SERIES.map(v=>`<option ${prefs.series===v?'selected':''}>${esc(v)}</option>`).join('');
+ openSheet(head('Aggiungi albo')+`<p class="note" style="margin-top:0">Per le nuove uscite non ancora in catalogo. Resta solo sul tuo dispositivo ed entra nel backup.</p>
+ <div class="fields" style="margin-top:14px">
+  <label class="field wide"><span>Serie</span><select id="aSeries">${opts}<option value="__new">Nuova serie…</option></select></label>
+  <label class="field wide" id="aNewWrap" hidden><span>Nome nuova serie</span><input id="aNew" placeholder="Es. PK 2027"></label>
+  <label class="field"><span>Numero</span><input id="aNum" placeholder="Es. 121"></label>
+  <label class="field"><span>Anno</span><input id="aYear" inputmode="numeric" value="${new Date().getFullYear()}"></label>
+  <label class="field wide"><span>Titolo</span><input id="aTitle" placeholder="Titolo della storia"></label>
+  <label class="field"><span>Tipo</span><select id="aKind"><option value="regular">Regolare</option><option value="variant">Variant</option><option value="special">Speciale</option></select></label>
+  <label class="field"><span>Testata</span><input id="aEd" placeholder="Topolino, Paperinik…"></label>
+  <label class="field wide"><span>Link copertina (facoltativo)</span><input id="aImg" type="url" placeholder="https://…"></label>
+  <label class="field wide" style="display:flex;align-items:center;gap:10px"><input id="aUp" type="checkbox" style="width:22px;min-height:22px;height:22px;accent-color:var(--mint)"><span style="margin:0">Non ancora uscito (in uscita)</span></label>
+ </div>
+ <div class="row" style="margin-top:18px"><button class="btn ghost" data-close>Annulla</button><button class="btn amber" style="flex:2" id="aSave">Aggiungi</button></div>`);
+ $('aSeries').onchange=e=>{$('aNewWrap').hidden=e.target.value!=='__new'};
+ if(pre.title){if(pre.series&&SERIES.includes(pre.series))$('aSeries').value=pre.series;else if(pre.series){$('aSeries').value='__new';$('aNewWrap').hidden=false;$('aNew').value=pre.series}
+  $('aNum').value=pre.number||'';$('aTitle').value=pre.title||'';$('aYear').value=pre.year||new Date().getFullYear();$('aKind').value=['regular','variant','special'].includes(pre.kind)?pre.kind:'regular';$('aEd').value=pre.edition||pre.where||'';$('aImg').value=pre.image||'';$('aUp').checked=!!pre.upcoming}
+ $('aSave').onclick=()=>{
+  const series=$('aSeries').value==='__new'?$('aNew').value.trim():$('aSeries').value;const title=$('aTitle').value.trim(),number=$('aNum').value.trim();
+  if(!series||!title||!number){toast('Servono serie, numero e titolo');return}
+  const img=cleanImageUrl($('aImg').value);if(img&&!/^https?:\/\//i.test(img)){toast('Il link copertina deve iniziare con https://');return}
+  const item={id:'CUSTOM-'+Date.now().toString(36),series,number,title,year:parseInt($('aYear').value,10)||new Date().getFullYear(),kind:$('aKind').value,image:img,source:'https://www.google.com/search?q='+encodeURIComponent('PK '+number+' '+title),label:series,edition:$('aEd').value.trim()||'Aggiunto da te',...($('aUp').checked?{upcoming:true}:{})};
+  if(pre.source)item.source=pre.source;if(pre.remoteId){const l=ignored();l.push(pre.remoteId);try{localStorage.setItem(IGNKEY,JSON.stringify(l))}catch(e){}}
+  customItems.push(item);saveCustom();const it={...item,custom:true};catalog.push(it);byId.set(it.id,it);refreshSeries();
+  backLayer();prefs.series=series;render();toast('Albo aggiunto');setTimeout(()=>openViewer(it.id),350);
+ };
+}
+
+/* ---------- Export / import ---------- */
+function download(name,blob){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500)}
+function downloadHTML(){const payload=JSON.stringify(entries).replace(/<\//g,'<\\/');const text=PRISTINE.replace(/const EMBEDDED_DATA=[\s\S]*?;\s*const KEY=/,()=>'const EMBEDDED_DATA='+payload+';\nconst KEY=');download('PK_Vault_mia_collezione.html',new Blob([text],{type:'text/html;charset=utf-8'}));toast('File HTML pronto')}
+function downloadBackup(){download('pk-vault-backup-'+new Date().toISOString().slice(0,10)+'.json',new Blob([JSON.stringify({app:'PK Vault',version:17,exportedAt:new Date().toISOString(),data:entries,custom:customItems},null,2)],{type:'application/json'}));toast('Backup pronto')}
+function downloadCSV(){const cols=['Serie','Numero','Titolo','Anno','Posseduto','Condizioni','Prezzo pagato','Data acquisto','Dove','Note'];const c=x=>'"'+String(x??'').replace(/"/g,'""')+'"';const lines=[cols,...catalog.map(i=>{const r=row(i.id);return [i.series,i.number,i.title,i.year,r.owned?'Sì':'No',r.condition||'',r.price||'',r.date||'',r.store||'',r.notes||'']})];download('pk-vault-collezione.csv',new Blob(['\ufeff'+lines.map(l=>l.map(c).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));toast('CSV pronto')}
+$('importFile').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const j=JSON.parse(await f.text());const rows=j.data||j;if(!rows||typeof rows!=='object'||Array.isArray(rows))throw new Error('formato non riconosciuto');if(!confirm('Sostituire la collezione attuale con questo backup?'))return;entries=rows;if(Array.isArray(j.custom)){for(const c of customItems){const k=catalog.findIndex(x=>x.id===c.id);if(k>=0)catalog.splice(k,1);byId.delete(c.id)}customItems=j.custom.filter(x=>x&&x.id&&x.series&&x.title);for(const c of customItems){const it={...c,custom:true};catalog.push(it);byId.set(it.id,it)}saveCustom();refreshSeries()}persist();selected.clear();selectMode=false;render();backLayer();toast('Backup importato')}catch(err){toast('Backup non valido: '+err.message)}finally{e.target.value=''}});
+async function resizedPng(file,maxW){const data=await new Promise((y,n)=>{const r=new FileReader;r.onload=()=>y(r.result);r.onerror=n;r.readAsDataURL(file)});const im=await new Promise((y,n)=>{const el=new Image;el.onload=()=>y(el);el.onerror=n;el.src=data});const c=document.createElement('canvas'),s=Math.min(1,maxW/im.naturalWidth);c.width=Math.round(im.naturalWidth*s);c.height=Math.round(im.naturalHeight*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/png')}
+async function resized(file,maxW=1800,qual=.9){const data=await new Promise((y,n)=>{const r=new FileReader;r.onload=()=>y(r.result);r.onerror=n;r.readAsDataURL(file)});const im=await new Promise((y,n)=>{const el=new Image;el.onload=()=>y(el);el.onerror=n;el.src=data});const c=document.createElement('canvas'),s=Math.min(1,maxW/im.naturalWidth);c.width=Math.round(im.naturalWidth*s);c.height=Math.round(im.naturalHeight*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',qual)}
+
+/* ---------- Griglia: tocco, pressione lunga, selezione ---------- */
+function syncSelection(){
+ for(const card of $('grid').querySelectorAll('.card')){const ch=selected.has(card.dataset.id);card.classList.toggle('chosen',ch);let m=card.querySelector('.choose');if(ch&&!m){card.querySelector('.cv-holder').insertAdjacentHTML('beforeend',`<span class="choose">${icon('check')}</span>`)}else if(!ch&&m){m.remove()}}
+ $('bulkBar').classList.toggle('open',selectMode);$('bulkCount').textContent=selected.size;$('bulkOwn').disabled=$('bulkMiss').disabled=!selected.size;
+}
+let lp=null,lpTimer=null,skipClick=false;
+const stopLP=()=>{clearTimeout(lpTimer);lp=null};
+$('grid').addEventListener('pointerdown',e=>{const c=e.target.closest('.card');if(!c||e.button>0)return;stopLP();skipClick=false;lp={id:c.dataset.id,x:e.clientX,y:e.clientY,p:e.pointerId};lpTimer=setTimeout(()=>{if(!lp)return;selectMode=true;selected.add(lp.id);skipClick=true;buzz(18);syncSelection()},500)},{passive:true});
+$('grid').addEventListener('pointermove',e=>{if(lp&&e.pointerId===lp.p&&(Math.abs(e.clientX-lp.x)>10||Math.abs(e.clientY-lp.y)>10))stopLP()},{passive:true});
+for(const ev of ['pointerup','pointercancel','pointerleave'])$('grid').addEventListener(ev,stopLP,{passive:true});
+$('grid').addEventListener('contextmenu',e=>{const c=e.target.closest('.card');if(!c)return;e.preventDefault();stopLP();selectMode=true;selected.add(c.dataset.id);skipClick=true;syncSelection()});
+$('grid').addEventListener('click',e=>{const c=e.target.closest('.card');if(!c)return;if(skipClick){skipClick=false;return}if(selectMode){selected.has(c.dataset.id)?selected.delete(c.dataset.id):selected.add(c.dataset.id);syncSelection()}else openViewer(c.dataset.id)});
+$('grid').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('card')){e.preventDefault();selectMode?(selected.has(e.target.dataset.id)?selected.delete(e.target.dataset.id):selected.add(e.target.dataset.id),syncSelection()):openViewer(e.target.dataset.id)}});
+function bulk(own){if(!selected.size)return;const now=Date.now();for(const id of selected)entries[id]={...row(id),owned:own,...(own?{ownedAt:now}:{})};const n=selected.size;persist();selected.clear();selectMode=false;render();toast(`${n} albi segnati come ${own?'posseduti':'mancanti'}`)}
+$('bulkOwn').onclick=()=>bulk(true);$('bulkMiss').onclick=()=>bulk(false);$('bulkCancel').onclick=()=>{selected.clear();selectMode=false;render()};
+
+/* ---------- Testata, schede serie, ricerca ---------- */
+$('tabs').addEventListener('click',e=>{const t=e.target.closest('.tab');if(!t)return;prefs.series=t.dataset.series;render();const sel=$('tabs').querySelector('.tab.sel');sel?.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});const dockTop=$('dock').getBoundingClientRect().top+scrollY-(parseFloat(getComputedStyle($('dock')).top)||0);if(scrollY>dockTop)scrollTo({top:dockTop})});
+$('filterBtn').onclick=filterSheet;$('menuBtn').onclick=settingsSheet;$('clearFilters').onclick=resetFilters;
+$('searchBtn').onclick=()=>{const b=$('searchbar');b.hidden=!b.hidden;$('searchBtn').classList.toggle('on',!b.hidden);if(!b.hidden)$('search').focus();else{$('search').value='';prefs.search='';render()}};
+$('closeSearch').onclick=()=>$('searchBtn').click();
+$('search').oninput=e=>{prefs.search=e.target.value.trim();render()};
+$('search').onkeydown=e=>{if(e.key==='Enter')e.target.blur()};
+new IntersectionObserver(([en])=>$('dock').classList.toggle('stuck',en.intersectionRatio<1),{threshold:[1],rootMargin:'-1px 0px 0px 0px'}).observe($('dock'));
+window.addEventListener('keydown',e=>{
+ if(e.target.matches?.('input,textarea,select'))return;
+ if(e.key==='Escape'){if(layers.length)backLayer();else if(selectMode){selected.clear();selectMode=false;render()}else if(!$('searchbar').hidden)$('closeSearch').click()}
+ if(viewer.classList.contains('open')&&!$('lightbox')){if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1)}
+});
+let rT=null;window.addEventListener('resize',()=>{clearTimeout(rT);rT=setTimeout(()=>{if(!viewer.classList.contains('open'))render()},250)});
+
+persist(true);render();applyBg();applyLogo();setTimeout(backgroundNewsCheck,2500);loadRemote();
+</script>
+</body>
+</html>

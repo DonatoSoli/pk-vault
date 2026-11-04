@@ -1,0 +1,112 @@
+# PK Vault · novità automatiche (file unico: script incluso)
+# Dopo il caricamento rinomina questo file in:  .github/workflows/novita.yml
+name: Novità PK
+on:
+  schedule:
+    - cron: "0 6 * * 1,4"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cerca le novità
+        run: |
+          cat > /tmp/novita.py << 'PY'
+          #!/usr/bin/env python3
+          """PK Vault · cerca le nuove uscite di PK e aggiorna upcoming.json.
+          Gira su GitHub Actions due volte a settimana. Solo libreria standard."""
+          import json, re, html, datetime, urllib.request, urllib.parse, pathlib
+
+          OUT = pathlib.Path("upcoming.json")
+          UA = {"User-Agent": "Mozilla/5.0 (PK Vault; collezione privata)", "Accept": "*/*"}
+          TODAY = datetime.date.today().isoformat()
+
+          PK_RX = re.compile(r"\bPK\b|\bPKNA\b|\bPKEDA\b|Pikappa|PK\s?[-–]\s?\d|Paperinik New", re.I)
+          SKIP_RX = re.compile(r"de\s?luxe|omnibus|giant|il mito|ristampa|cofanetto pieno|statua|portachiavi|\bpin\b|carte da gioco|gadget|t-?shirt|tazza|poster", re.I)
+
+          def get(url, timeout=25):
+              req = urllib.request.Request(url, headers=UA)
+              with urllib.request.urlopen(req, timeout=timeout) as r:
+                  return r.read().decode("utf-8", "replace")
+
+          def wp_posts(base, search=None, n=20):
+              q = {"per_page": n, "_fields": "date,link,title"}
+              if search: q["search"] = search
+              for path in ("/wp-json/wp/v2/posts", "/?rest_route=/wp/v2/posts"):
+                  try:
+                      sep = "&" if "?" in path else "?"
+                      data = json.loads(get(base + path + sep + urllib.parse.urlencode(q)))
+                      return [{"title": html.unescape(p["title"]["rendered"]), "link": p["link"], "date": p["date"]} for p in data]
+                  except Exception as e:
+                      print("  ", base, path, "→", e)
+              return []
+
+          def guess(name):
+              n = name.lower()
+              if re.search(r"pk\s?[-–]\s?\d|early days|pkeda", n): series = "PKEDA"
+              elif "topolino" in n: series = "PKNE"
+              elif "paperinik" in n and "new" not in n: series = "Untold Tales"
+              else: series = "Nuovi PK"
+              num = re.search(r"(?:pk\s?)?([-–]?\s?\d{1,4})", name, re.I)
+              number = num.group(1).replace(" ", "").replace("–", "-") if num else ""
+              kind = "variant" if "variant" in n or "blank" in n else "regular"
+              return series, number, kind
+
+          def panini():
+              items = []
+              url = "https://www.panini.it/shp_ita_it/catalogsearch/result/?q=" + urllib.parse.quote("PK") + "&product_list_limit=48"
+              try:
+                  page = get(url)
+              except Exception as e:
+                  print("   Panini →", e); return items
+              for block in re.split(r'class="[^"]*product-item-info', page)[1:]:
+                  a = re.search(r'class="[^"]*product-item-link[^"]*"[^>]*href="([^"]+)"[^>]*>\s*([^<]+?)\s*</a>', block) \
+                      or re.search(r'href="([^"]+)"[^>]*class="[^"]*product-item-link[^"]*"[^>]*>\s*([^<]+?)\s*</a>', block)
+                  if not a: continue
+                  link, name = html.unescape(a.group(1)), html.unescape(a.group(2)).strip()
+                  if not PK_RX.search(name) or SKIP_RX.search(name): continue
+                  img = re.search(r'<img[^>]+class="[^"]*product-image-photo[^"]*"[^>]+(?:data-src|src)="([^"]+)"', block) \
+                        or re.search(r'<img[^>]+(?:data-src|src)="([^"]+)"[^>]+class="[^"]*product-image-photo', block)
+                  image = re.sub(r"/cache/[^/]+/", "/", html.unescape(img.group(1))) if img else ""
+                  series, number, kind = guess(name)
+                  slug = re.sub(r"[^a-z0-9]+", "-", link.rstrip("/").split("/")[-1].lower()).strip("-")[:60]
+                  items.append({"id": "auto-panini-" + slug, "title": name, "number": number, "series": series, "kind": kind,
+                                "image": image, "source": link, "where": "Panini",
+                                "upcoming": bool(re.search(r"preordin|prenota|in uscita|disponibile dal", block, re.I))})
+              return items
+
+          def main():
+              old = {}
+              if OUT.exists():
+                  try: old = json.loads(OUT.read_text("utf-8"))
+                  except Exception: old = {}
+              print("PK Hack…");   news = [dict(n, src="PK Hack") for n in wp_posts("https://pkhack.altervista.org")]
+              print("Papersera…"); news += [dict(n, src="Papersera") for n in wp_posts("https://www.papersera.net/wp", "PK") if PK_RX.search(n["title"])]
+              news.sort(key=lambda n: n["date"], reverse=True)
+              print("Panini…");    found = panini()
+              prev = {i["id"]: i for i in old.get("items", [])}
+              for i in found:
+                  i["date"] = prev.get(i["id"], {}).get("date", TODAY)   # data in cui l'abbiamo vista la prima volta
+                  prev[i["id"]] = {**prev.get(i["id"], {}), **i}
+              items = sorted(prev.values(), key=lambda i: i.get("date", ""), reverse=True)[:80]
+              data = {"updated": datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+                      "news": news[:25] or old.get("news", []), "items": items}
+              OUT.write_text(json.dumps(data, ensure_ascii=False, indent=1), "utf-8")
+              print(f"OK · {len(data['news'])} articoli · {len(items)} albi candidati")
+
+          if __name__ == "__main__":
+              main()
+          PY
+          python /tmp/novita.py
+      - name: Salva se ci sono novità
+        run: |
+          git config user.name "pk-vault-bot"
+          git config user.email "pk-vault-bot@users.noreply.github.com"
+          git add upcoming.json
+          git diff --cached --quiet || (git commit -m "Novità PK $(date +%F)" && git push)
